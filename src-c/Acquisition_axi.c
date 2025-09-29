@@ -33,7 +33,7 @@ int create_file(FILE* fichier, int dsize, int dec, int number_of_files){
     
     float offset = 0;
     int nb_bits = 14; 
-    rp_channel_t channel = RP_CH_2;
+    rp_channel_t channel = RP_CH_1;
 
     // Fonction ne marche pas rp_AcqAxigetOffset non comprise par la RedPitaya lors de la compilation
     // if (rp_AcqAxiGetOffset(channel, &offset) != RP_OK){
@@ -65,29 +65,31 @@ int main(int argc, char **argv)
     float excitation_amplitude_Volts = 0.19;
     float Larmor_frequency_Hertz = 24351392.574;
     float oscillator_amplitude_Volts = 0.8;
-
     int delayRepeat = 5; //en secondes
     int number_of_files = 1;
     char nomFichier[256];
-    rp_pinState_t Gain = RP_HIGH;
 
+
+    // Pin Acq Settings
+    rp_pinState_t Gain = RP_LOW;
+    rp_channel_t CH_ACQ = RP_CH_1;
     rp_acq_trig_state_t state;
     uint32_t g_adc_axi_start,g_adc_axi_size;
 
+    /////// ----- ARGUMENTS DU PROGRAMME ----- //////
     if (argc < 7) {
     fprintf(stderr, "Erreur : nombre d'arguments insuffisant.\n");
     fprintf(stderr, "Usage : %s <dsize> <dec> <number_of_files> <nomFichier> <Frequency> <exitation duration>\n", argv[0]);
     exit(EXIT_FAILURE);
     }
-
     dsize = atoi(argv[1]);
     dec = atoi(argv[2]);
     number_of_files = atoi(argv[3]);
     strcpy(nomFichier, argv[4]);
     Larmor_frequency_Hertz = atof(argv[5]);
     excitation_duration_seconds = atof(argv[6]);
+    delayRepeat = atoi(argv[7]);
     printf("larmor %f, duration excitation %f\n",Larmor_frequency_Hertz, excitation_duration_seconds);
-
     // Vérification des valeurs numériques
     if (dsize <= 0 || dec < 0 || number_of_files <= 0) {
         fprintf(stderr, "Erreur : paramètres invalides.\n");
@@ -100,7 +102,6 @@ int main(int argc, char **argv)
 
     int excitation_burst_cycles_tot = Larmor_frequency_Hertz *excitation_duration_seconds;
     float oscillator_frequency = Larmor_frequency_Hertz + 1000;
-    
 
     float *buff1 = (float *)malloc(dsize * sizeof(float));
     uint32_t posChA;
@@ -122,18 +123,17 @@ int main(int argc, char **argv)
         fprintf(stderr, "rp_AcqAxiSetDecimationFactor failed!\n");
         return -1;
     }
-    if (rp_AcqAxiSetTriggerDelay(RP_CH_2, dsize)  != RP_OK) { 
-        fprintf(stderr, "rp_AcqAxiSetTriggerDelay RP_CH_2 failed!\n");
+    if (rp_AcqAxiSetTriggerDelay(CH_ACQ, dsize)  != RP_OK) { 
+        fprintf(stderr, "rp_AcqAxiSetTriggerDelay CH_ACQ failed!\n");
         return -1;
     }
-    if (rp_AcqSetGain(RP_CH_2, Gain) != RP_OK){
+    if (rp_AcqSetGain(CH_ACQ, Gain) != RP_OK){
         fprintf(stderr, "rp_AcqSetGain CH1 Failed\n");
         return -1;
     }
 
 
-
-    //// INITIALISATION GENERATION BURST ///////
+    //// ---- INITIALISATION GENERATION BURST ---- ////
     if(rp_GenReset() != RP_OK){
             fprintf(stderr, "rp_GenReset failed!\n");
             return -1;
@@ -172,7 +172,7 @@ int main(int argc, char **argv)
     }
 
 
-    //// INITIALISATION ET LANCEMENT DE L'OSCILLATEUR LOCAL
+    //// ---- INITIALISATION ET LANCEMENT DE L'OSCILLATEUR LOCAL ---- ////
     if(rp_GenWaveform(RP_CH_2, RP_WAVEFORM_SINE) != RP_OK){
         fprintf(stderr, "rp_GenWaveform RP_CH_1 SINE failed!\n");
         return -1;
@@ -195,7 +195,7 @@ int main(int argc, char **argv)
     }
   
 
-    //// CREATION DU FICHIER
+    //// ---- CREATION DU FICHIER ---- ////
     FILE *fichier = fopen(nomFichier, "w");
     printf("fichier crée : ");
     puts(nomFichier);
@@ -209,7 +209,7 @@ int main(int argc, char **argv)
     }
 
 
-    //////////BOUCLE DE FICHIERS//////////
+    //// ---- BOUCLE DE FICHIERS ---- ////
     rp_DpinSetState(RP_LED0+1, RP_HIGH);
     clock_t begin = clock();
     int i=0;
@@ -219,14 +219,21 @@ int main(int argc, char **argv)
         rp_AcqAxiGetMemoryRegion(&g_adc_axi_start,&g_adc_axi_size);
         //printf("Reserved memory start 0x%X size 0x%X bytes\n",g_adc_axi_start,g_adc_axi_size);
 
-        if (rp_AcqAxiSetBufferSamples(RP_CH_2,g_adc_axi_start, dsize) != RP_OK) {
-        fprintf(stderr, "rp_AcqAxiSetBuffer RP_CH_2 failed!\n");
+        if (rp_AcqAxiSetBufferSamples(CH_ACQ,g_adc_axi_start, dsize) != RP_OK) {
+        fprintf(stderr, "rp_AcqAxiSetBuffer CH_ACQ failed!\n");
         return -1;
         }
-        if (rp_AcqAxiEnable(RP_CH_2, true)) {
-            fprintf(stderr, "rp_AcqAxiEnable RP_CH_2 failed!\n");
+        if (rp_AcqAxiEnable(CH_ACQ, true)) {
+            fprintf(stderr, "rp_AcqAxiEnable CH_ACQ failed!\n");
             return -1;
         }
+
+        ////////////DECLENCHEMENT SYNCHRONISE///////////////
+        if(rp_GenSynchronise() != RP_OK){
+            fprintf(stderr, "rp_GenSynchronise failed!\n");
+            return -1;
+        }
+        usleep(excitation_duration_microseconds);
 
         //LANCEMENT, DECLENCGEMENT DE L'AQUISITION AVANT LE BURST
         if (rp_AcqStart() != RP_OK) {
@@ -246,17 +253,13 @@ int main(int argc, char **argv)
                 break;
             }
         }
+        
 
-       ////////////DECLENCHEMENT SYNCHRONISE///////////////
-        if(rp_GenSynchronise() != RP_OK){
-            fprintf(stderr, "rp_GenSynchronise failed!\n");
-            return -1;
-        }
-         
+
         printf ("wait to be filled\n");
         while (!fillState) {
-            if (rp_AcqAxiGetBufferFillState(RP_CH_2, &fillState) != RP_OK) {
-                fprintf(stderr, "rp_AcqAxiGetBufferFillState RP_CH_2 failed!\n");
+            if (rp_AcqAxiGetBufferFillState(CH_ACQ, &fillState) != RP_OK) {
+                fprintf(stderr, "rp_AcqAxiGetBufferFillState CH_ACQ failed!\n");
                 return -1;
             }
         }
@@ -266,12 +269,12 @@ int main(int argc, char **argv)
                 return -1;
         }
 
-        if(rp_AcqAxiGetWritePointerAtTrig(RP_CH_2, &posChA)!=RP_OK){
+        if(rp_AcqAxiGetWritePointerAtTrig(CH_ACQ, &posChA)!=RP_OK){
             fprintf(stderr,"rp_AcqAxiGetWritePointerAtTrig Error");
         }
         printf("Tr pos1: 0x%x\n",posChA);
 
-        if(rp_AcqAxiGetDataV(RP_CH_2, posChA, &dsize, buff1)!=RP_OK){
+        if(rp_AcqAxiGetDataV(CH_ACQ, posChA, &dsize, buff1)!=RP_OK){
             fprintf(stderr, "rp_AcqAxiGetDataV failed\n");
         }
         
@@ -285,7 +288,7 @@ int main(int argc, char **argv)
         }
         fprintf(fichier, "\n");
 
-        //sleep(delayRepeat);
+        sleep(delayRepeat);
 
     }
     clock_t end = clock();
@@ -297,7 +300,7 @@ int main(int argc, char **argv)
     fclose(fichier);
 
     /* Releasing resources */
-    rp_AcqAxiEnable(RP_CH_2, false);
+    rp_AcqAxiEnable(CH_ACQ, false);
     rp_Release();
     free(buff1);
     return 0;
