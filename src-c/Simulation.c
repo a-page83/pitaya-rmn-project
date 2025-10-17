@@ -31,52 +31,26 @@ int main (int argc, char **argv) {
    }
 
  	rp_GenReset();
-	rp_GenWaveform(RP_CH_1, RP_WAVEFORM_SINE);
-	rp_GenFreq(RP_CH_1, precession_frequency_shifted);
+	rp_GenWaveform(RP_CH_1, RP_WAVEFORM_DC);
 	rp_GenAmp(RP_CH_1, 0.5);
-
-	rp_GenMode(RP_CH_1, RP_GEN_MODE_BURST);
-	rp_GenBurstCount(RP_CH_1, 5);           //5 periodes sinusoidales
-	rp_GenBurstRepetitions(RP_CH_1, 1);
-	rp_GenBurstPeriod(RP_CH_1, 1);          //une micro seconde entre chaque répétition
-		
-    rp_GenOutEnable(RP_CH_1);
+	
 
 
     while(1){
-        if (rp_AcqReset() != RP_OK) {
-            fprintf(stderr, "rp_AcqReset failed!\n");
-            return -1;
-        }
-
-        if (rp_AcqStart() != RP_OK) {
-            fprintf(stderr, "rp_AcqStart failed!\n");
-            return -1;
-        }
-	    rp_AcqSetTriggerSrc(RP_TRIG_SRC_CHA_PE);
-        rp_AcqSetTriggerLevel(RP_T_CH_1, excitation_amplitude_Volts);
-
-
-        rp_acq_trig_state_t state = RP_TRIG_STATE_WAITING;
 
         //Attente de la salve d'excitation
         //led indiquant que la simulation tourne
         rp_DpinSetState(led+1, RP_HIGH);
-        while (1){
-            rp_AcqGetTriggerState(&state);
-            if(state == RP_TRIG_STATE_TRIGGERED){
-                //usleep(excitation_duration_microseconds);
-                rp_GenTriggerOnly(RP_CH_1); //déclenchement out1 NOW
-                break;
-            }
-            //usleep(1);
-        }
 
+        rp_GenOutEnable(RP_CH_1);
+        rp_GenTriggerOnly(RP_CH_1); //déclenchement out1 NOW     
         
-
         rp_DpinSetState(led, RP_LOW);
         rp_DpinSetState(led+1, RP_LOW);
-        //sleep(3);
+        
+        usleep(3000);
+        rp_GenOutDisable(RP_CH_1);
+        usleep(100000);
     }
     // Releasing resources
     rp_Release();
