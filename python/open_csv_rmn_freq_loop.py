@@ -18,7 +18,7 @@ SAMPLING_RATE = 125e+6
 root = tk.Tk()
 root.withdraw()
 
-file_path = filedialog.askopenfilename()
+file_path_all = filedialog.askopenfilename()
 
 
 def accumulate(voltage_matrix,nb_accumulated):
@@ -210,56 +210,59 @@ def plot_fourier_transform(graph_name, time, voltage):
     #plt.tight_layout()
     #plt.show(block=True)
 
-#############################################################""
+#############################################################
 
 FidNb = -1 #-1 Pour prendre toutes les FID
+Number_of_files = 30
 
-print("Ouverture de : "+file_path)
-graph_name = file_path[65:len(file_path)] ## On prend le nom de la figure
+print("Ouverture de : "+file_path_all)
+graph_name = "FindFreq_Auto"
 
+file_path_all = file_path_all[:-1]
 
-time_array, voltage_array_matrix, voltageAcc_array = open_file(file_path, nombre_de_FID=FidNb)
-print("Affichage de la FID...")
+plt.figure()
+for i in range(Number_of_files):
+    file_path = file_path_all + str(i)
+    time_array, voltage_array_matrix, voltageAcc_array = open_file(file_path, nombre_de_FID=FidNb)
+     
+    print("Affichage de la FID...")
 
-plot_acc_only(graph_name, time_array, voltage_array_matrix, amountFID=FidNb)
-
-""" 
-if(len(voltage_array_matrix)>10):
-    plot_acc_only(graph_name = graph_name, time_axis= time_array, voltage_matrix= voltage_array_matrix,amountFID=10)
-
- """
-plot_single(graph_name, time_array, voltage_array_matrix, FID_nb=1)
-print("Affichage de la Transformée de Fourrier...")
-plot_fourier_transform(graph_name,time_array ,voltageAcc_array)
-
-
-# Paramètres du signal
-t = time_array
-fs = 1/((time_array[10]-time_array[0])/10)           #SAMPLING_RATE/decimation  # Fréquence d'échantillonnage (Hz)
-
-
-freq_basse = 2000   # Fréquence basse (Hz)
-freq_haute = 100000  # Fréquence haute (Hz)
-ordre = 3         # Ordre du filtre
-
-butter = signal.butter(ordre,[freq_basse,freq_haute], 
-                    btype='bandpass', fs=fs, output='sos')
-
-signal_filtre = signal.sosfilt(butter, voltageAcc_array)
+    # Affichage du signal accumulé
+    plt.plot(time_array, voltageAcc_array, marker='+', linestyle='-', label=str(i), linewidth=2)
+    
+    # Mise en forme du graphique
+    plt.title(f'{graph_name} - Accumulation de {FidNb}')
+    plt.xlabel('Temps (s)')
+    plt.ylabel('Tension (V)')
+    plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
+    plt.legend()
 
 
-plt.figure(figsize=(10, 4))
-plt.plot(time_array, signal_filtre)
-plt.title("Signal filtre")
-plt.xlabel("Temps [s]")
-plt.ylabel("Amplitude")
-plt.grid(True)
-plt.tight_layout()
+plt.figure()
+for i in range(Number_of_files):
+    file_path = file_path_all + str(i)
+    time_array, voltage_array_matrix, voltageAcc_array = open_file(file_path, nombre_de_FID=FidNb)
+    
 
-graph_name_tf_filtré = graph_name + " - filtré"
-plot_fourier_transform(graph_name=graph_name_tf_filtré, time=time_array, voltage=signal_filtre)
+    ## Calcul de la TF :
+    dt = time_array[0]-time_array[1]
+    
+    N = len(voltageAcc_array)
+    fft_values = np.fft.fft(voltageAcc_array)
+    freq = np.fft.fftfreq(N, dt)
+    magnitude = np.abs(fft_values) * 2 / N  # Normalize amplitude
 
 
+    print("Affichage de la TF...")
+
+    plt.plot(freq, magnitude, label= str(i))
+    plt.title("Fourier Transform - " + graph_name)
+    plt.xlabel("Frequency [Hz]")
+    plt.ylabel("Amplitude")
+    plt.legend()
+    plt.grid(True, which='both')
+    plt.minorticks_on()
+    plt.grid(which='minor', alpha=0.2)
+    plt.grid(which='major', alpha=0.5)
 
 plt.show()
-
