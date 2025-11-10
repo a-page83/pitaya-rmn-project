@@ -212,16 +212,17 @@ def plot_fourier_transform(graph_name, time, voltage):
 
 #############################################################""
 
-FidNb = -1 #-1 Pour prendre toutes les FID
+FidNb = 10 #-1 Pour prendre toutes les FID
+
 
 print("Ouverture de : "+file_path)
-graph_name = file_path[65:len(file_path)] ## On prend le nom de la figure
+graph_name = "FID Antenne 0.8mm"##file_path[65:len(file_path)] ## On prend le nom de la figure
 
 
 time_array, voltage_array_matrix, voltageAcc_array = open_file(file_path, nombre_de_FID=FidNb)
 print("Affichage de la FID...")
 
-plot_acc_only(graph_name, time_array, voltage_array_matrix, amountFID=FidNb)
+plot_acc_only(graph_name, time_array[200:], np.array(voltage_array_matrix)[:,200:], amountFID=FidNb)
 
 """ 
 if(len(voltage_array_matrix)>10):
@@ -230,7 +231,7 @@ if(len(voltage_array_matrix)>10):
  """
 plot_single(graph_name, time_array, voltage_array_matrix, FID_nb=1)
 print("Affichage de la Transformée de Fourrier...")
-plot_fourier_transform(graph_name,time_array ,voltageAcc_array)
+plot_fourier_transform(graph_name,time_array,voltageAcc_array[200:])
 
 
 # Paramètres du signal
@@ -238,28 +239,38 @@ t = time_array
 fs = 1/((time_array[10]-time_array[0])/10)           #SAMPLING_RATE/decimation  # Fréquence d'échantillonnage (Hz)
 
 
-freq_basse = 2000   # Fréquence basse (Hz)
-freq_haute = 100000  # Fréquence haute (Hz)
-ordre = 3         # Ordre du filtre
+freq_basse = 500   # Fréquence basse (Hz)
+freq_haute = 1500  # Fréquence haute (Hz)
+ordre = 1          # Ordre du filtre
 
 butter = signal.butter(ordre,[freq_basse,freq_haute], 
                     btype='bandpass', fs=fs, output='sos')
 
-signal_filtre = signal.sosfilt(butter, voltageAcc_array)
+signal_filtre = signal.sosfilt(butter, voltageAcc_array[200:])
 
 
 plt.figure(figsize=(10, 4))
-plt.plot(time_array, signal_filtre)
+plt.plot(time_array[200:], signal_filtre)
 plt.title("Signal filtre")
 plt.xlabel("Temps [s]")
 plt.ylabel("Amplitude")
 plt.grid(True)
 plt.tight_layout()
 
-graph_name_tf_filtré = graph_name + " - filtré"
-plot_fourier_transform(graph_name=graph_name_tf_filtré, time=time_array, voltage=signal_filtre)
+graph_name_tf_filtré2 = graph_name + " - filtré2"
+plot_fourier_transform(graph_name=graph_name_tf_filtré2, time=time_array, voltage=signal_filtre)
+
+signal_filtre2 = signal.sosfilt(butter, np.array(voltage_array_matrix)[1,:])
 
 
+plt.figure(figsize=(10, 4))
+plt.plot(time_array[200:], signal_filtre2[200:])
+plt.title("Signal filtre")
+plt.xlabel("Temps [s]")
+plt.ylabel("Amplitude")
+plt.grid(True)
+plt.tight_layout()
 
+plot_fourier_transform(graph_name=graph_name_tf_filtré2, time=time_array[200:], voltage=signal_filtre2[200:])
 plt.show()
 

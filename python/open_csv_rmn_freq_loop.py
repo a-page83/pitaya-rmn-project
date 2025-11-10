@@ -10,6 +10,9 @@ from scipy import signal
 import datetime
 import tkinter as tk
 from tkinter import filedialog
+from scipy.signal import freqz
+from scipy.signal import butter, lfilter
+
 
 SAMPLING_RATE = 125e+6
 
@@ -20,6 +23,13 @@ root.withdraw()
 
 file_path_all = filedialog.askopenfilename()
 
+def butter_bandpass(lowcut, highcut, fs, order=5):
+    return butter(order, [lowcut, highcut], fs=fs, btype='band')
+
+def butter_bandpass_filter(data, lowcut, highcut, fs, order=5):
+    b, a = butter_bandpass(lowcut, highcut, fs, order=order)
+    y = lfilter(b, a, data)
+    return y
 
 def accumulate(voltage_matrix,nb_accumulated):
     dsize = len(voltage_matrix[0])
@@ -178,6 +188,7 @@ def subpolts_acc(graph_name, time_axis, voltage_matrix, nb_of_accumulated):
     plt.tight_layout()
 
 def plot_fourier_transform(graph_name, time, voltage):
+    
     # Ensure time and voltage are numpy arrays
     time = np.array(time)
     voltage = np.array(voltage)
@@ -213,7 +224,10 @@ def plot_fourier_transform(graph_name, time, voltage):
 #############################################################
 
 FidNb = -1 #-1 Pour prendre toutes les FID
-Number_of_files = 30
+
+Start_freq = 24.3429e+6-10e+3
+Step_freq = 2000
+Number_of_files = 10
 
 print("Ouverture de : "+file_path_all)
 graph_name = "FindFreq_Auto"
@@ -237,19 +251,29 @@ for i in range(Number_of_files):
     plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
     plt.legend()
 
-
+### plot FT
 plt.figure()
 for i in range(Number_of_files):
     file_path = file_path_all + str(i)
     time_array, voltage_array_matrix, voltageAcc_array = open_file(file_path, nombre_de_FID=FidNb)
     
-
-    ## Calcul de la TF :
-    dt = time_array[0]-time_array[1]
+    freq_ex = Start_freq + Step_freq*i
     
-    N = len(voltageAcc_array)
-    fft_values = np.fft.fft(voltageAcc_array)
+    voltageAcc_array = voltageAcc_array[300:]
+
+    #Filtrage :
+    fs = 1/((time_array[10]-time_array[0])/10) 
+    lowcut = 100.0
+    highcut = 2000.0
+    voltageAcc_array_filtered = butter_bandpass_filter(voltageAcc_array, lowcut, highcut, fs, order=3)
+
+
+    ## Calcul de la TF
+    dt = time_array[0]-time_array[1]
+    N = len(voltageAcc_array_filtered)
+    fft_values = np.fft.fft(voltageAcc_array_filtered)
     freq = np.fft.fftfreq(N, dt)
+    freq = freq + freq_ex
     magnitude = np.abs(fft_values) * 2 / N  # Normalize amplitude
 
 
