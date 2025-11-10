@@ -42,4 +42,4 @@ build/
 bin/
 *.out
 mesures/
-.bin
+*.bin
