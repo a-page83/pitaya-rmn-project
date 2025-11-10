@@ -57,18 +57,16 @@ int create_file(FILE* fichier, int dsize, int dec, int number_of_files){
 int main(int argc, char **argv)
 {
     uint32_t dsize = DATA_SIZE_MAX;
-    uint32_t dec =1; 
-    
-    
-    float excitation_duration_seconds = 45.101e-06; //41.027e-06
-    float excitation_duration_microseconds = excitation_duration_seconds*1000000;
-    float excitation_amplitude_Volts = 0.19;
-    float Larmor_frequency_Hertz = 24351392.574;
-    float oscillator_amplitude_Volts = 0.8;
-    int delayRepeat = 5; //en secondes
-    int number_of_files = 1;
+    uint32_t dec; 
+    float excitation_duration_seconds; //41.027e-06
+    float excitation_duration_microseconds;
+    float Larmor_frequency_Hertz;
+    int delayRepeat_micro; //en usecondes
+    int number_of_files;
     char nomFichier[256];
 
+    float excitation_amplitude_Volts = 0.19;
+    float oscillator_amplitude_Volts = 0.8;
 
     // Pin Acq Settings
     rp_pinState_t Gain = RP_LOW;
@@ -88,7 +86,7 @@ int main(int argc, char **argv)
     strcpy(nomFichier, argv[4]);
     Larmor_frequency_Hertz = atof(argv[5]);
     excitation_duration_seconds = atof(argv[6]);
-    delayRepeat = atoi(argv[7]);
+    delayRepeat_micro = atoi(argv[7]);
     printf("larmor %f, duration excitation %f\n",Larmor_frequency_Hertz, excitation_duration_seconds);
     // Vérification des valeurs numériques
     if (dsize <= 0 || dec < 0 || number_of_files <= 0) {
@@ -101,7 +99,7 @@ int main(int argc, char **argv)
 
 
     int excitation_burst_cycles_tot = Larmor_frequency_Hertz *excitation_duration_seconds;
-    float oscillator_frequency = Larmor_frequency_Hertz + 1000;
+    float oscillator_frequency = Larmor_frequency_Hertz + 6000;
 
     float *buff1 = (float *)malloc(dsize * sizeof(float));
     uint32_t posChA;
@@ -213,8 +211,16 @@ int main(int argc, char **argv)
     rp_DpinSetState(RP_LED0+1, RP_HIGH);
     clock_t begin = clock();
     int i=0;
+    int num_led = 1;
     for (i=0;i<number_of_files;i++){
+        num_led = (i*number_of_files)/5;
+        if(i%2){
+            rp_DpinSetState(RP_LED0+1, RP_HIGH);}
+        else{
+            rp_DpinSetState(RP_LED0+1, RP_LOW);
+        }
         fillState = false;
+        
         rp_AcqResetFpga();
         rp_AcqAxiGetMemoryRegion(&g_adc_axi_start,&g_adc_axi_size);
         //printf("Reserved memory start 0x%X size 0x%X bytes\n",g_adc_axi_start,g_adc_axi_size);
@@ -288,7 +294,7 @@ int main(int argc, char **argv)
         }
         fprintf(fichier, "\n");
 
-        sleep(delayRepeat);
+        usleep(delayRepeat_micro);
 
     }
     clock_t end = clock();
