@@ -6,7 +6,9 @@
 #include <unistd.h>
 #include <string.h>
 #include <time.h>
+
 #include "rp.h"
+#include "functions.h"
 
 #define DATA_SIZE_MAX 524288
 #define SAMPLE_RATE 125000000
@@ -27,32 +29,6 @@
  * @note Le offset est actuellement fixé à 0 car la fonction rp_AcqAxiGetOffset n'est pas supportée.
  * @note Le gain est récupéré via rp_AcqGetGainV sur le canal 2 (RP_CH_2).
  */
-int create_file(FILE* fichier, int dsize, int dec, int number_of_files){   
-
-    float gainValue; //1 ou 20V
-    
-    float offset = 0;
-    int nb_bits = 14; 
-    rp_channel_t channel = RP_CH_1;
-
-    // Fonction ne marche pas rp_AcqAxigetOffset non comprise par la RedPitaya lors de la compilation
-    // if (rp_AcqAxiGetOffset(channel, &offset) != RP_OK){
-    //     return -1;
-    // }
-
-    if (rp_AcqGetGainV(channel, &gainValue) != RP_OK){
-        return -1;
-    }
-
-    fprintf(fichier, "%d, ", dsize );
-    fprintf(fichier, "%d, ", dec );
-    fprintf(fichier, "%d, ", number_of_files);
-    fprintf(fichier, "%f, ",(float) gainValue);
-    fprintf(fichier, "%f, ", offset);
-    fprintf(fichier, "%d\n", nb_bits);
-
-    return 0;
-}
 
 int main(int argc, char **argv)
 {
@@ -67,6 +43,7 @@ int main(int argc, char **argv)
 
     float excitation_amplitude_Volts = 0.19;
     float oscillator_amplitude_Volts = 0.8;
+    int gainValue = 0;
 
     // Pin Acq Settings
     rp_pinState_t Gain = RP_LOW;
@@ -101,7 +78,7 @@ int main(int argc, char **argv)
     int excitation_burst_cycles_tot = Larmor_frequency_Hertz *excitation_duration_seconds;
     float oscillator_frequency = Larmor_frequency_Hertz + 6000;
 
-    float *buff1 = (float *)malloc(dsize * sizeof(float));
+    int16_t *buff1 = (int16_t *)malloc(dsize * sizeof(int16_t));
     uint32_t posChA;
     bool fillState = false;
     
@@ -191,18 +168,19 @@ int main(int argc, char **argv)
         fprintf(stderr, "rp_GenOutEnable RP_CH_1 failed!\n");
         return -1;
     }
-  
+    
 
-    //// ---- CREATION DU FICHIER ---- ////
-    FILE *fichier = fopen(nomFichier, "w");
+
+    ////Create file
+    FILE *fichier = fopen(nomFichier, "wb+");
     printf("fichier crée : ");
     puts(nomFichier);
     if (fichier == NULL) {
         perror("Erreur lors de l'ouverture du fichier\n");
         return -1; // Quitte le programme avec erreur
     }
-    if (create_file(fichier, dsize, dec, number_of_files)){
-        perror("Erreur de creation fichier");
+    if (build_file(fichier, dsize, dec, number_of_files, gainValue)){
+        perror("Erreur de creation fichier\n");
         return -1;
     }
 
@@ -280,20 +258,11 @@ int main(int argc, char **argv)
         }
         printf("Tr pos1: 0x%x\n",posChA);
 
-        if(rp_AcqAxiGetDataV(CH_ACQ, posChA, &dsize, buff1)!=RP_OK){
-            fprintf(stderr, "rp_AcqAxiGetDataV failed\n");
+        if(rp_AcqAxiGetDataRaw(CH_ACQ, posChA, &dsize, buff1)!=RP_OK){
+            fprintf(stderr, "rp_AcqAxiGetDataRaw failed\n");
         }
         
-
-        //////  Ecriture des données dans le fichier    //////
-        printf("ecriture FID %d\n",i);
-        for (int i = 0; i < dsize; i++) {
-            //printf("[%d]\t%f\n",i,buff1[i]);
-            fprintf(fichier, "%f", buff1[i]);
-            if (i!= dsize -1) fprintf(fichier, ",");
-        }
-        fprintf(fichier, "\n");
-
+        add_to_file(fichier, buff1, dsize);
         usleep(delayRepeat_micro);
 
     }

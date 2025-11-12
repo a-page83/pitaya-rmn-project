@@ -12,6 +12,7 @@ import tkinter as tk
 from tkinter import filedialog
 from scipy.signal import freqz
 from scipy.signal import butter, lfilter
+import struct
 
 
 SAMPLING_RATE = 125e+6
@@ -102,7 +103,63 @@ def open_file(pathFile_csv, nombre_de_FID):
 
         print(f"Fichier {pathFile_csv} lu. {len(voltage)} signaux FID chargés.")
         return time, voltage, voltage_acc
-    
+
+def open_file_bin(pathFile_csv,nombre_de_FID):
+        
+        "open the file at the given path and give back the numpy vectors time, voltage"
+        voltage_acc = []
+
+        with open(pathFile_csv, mode='rb') as file: # b is important -> binary
+            # Lire tout le contenu binaire du fichier ouvert (retourne des bytes)
+            fileContent = file.read()
+
+            # Les 16 premiers octets correspondent à l'en-tête (4 entiers de 4 octets chacun)
+            headerbin = fileContent[0:16]
+            # Décomposer ces 16 octets en 4 entiers (iiii)
+            header = struct.unpack("iiii", headerbin)
+
+            # Afficher l'en-tête pour debug (ex: (dsize, decimation, nombre_de_FID, ...))
+            print(header)
+            # Récupérer les valeurs utiles depuis le tuple d'entiers
+            dsize           = header[0]  # nombre d'échantillons par FID
+            decimation      = header[1]  # facteur de décimation utilisé lors de l'acquisition
+            nombre_de_FID   = header[2]  # nombre de FID présents dans le fichier
+
+            # Initialisation : créer une liste contenant une sous-liste vide par FID
+            # (sera remplie plus tard avec les tableaux numpy de chaque signal)
+            voltage = [[] for _ in range(nombre_de_FID)]
+            mean = []
+            voltage_acc = np.zeros(dsize)  # Initialiser au bon format et taille
+
+            # Lecture et conversion des tensions
+            for j in range(nombre_de_FID):
+                # Extract bytes for this FID (each sample is int16 -> 2 bytes)
+                start = 16 + j * dsize*2  # 16 bytes for header + offset for FID (*2 because int16=2 bytes)
+                end = start + dsize*2
+                if end > len(fileContent):
+                    raise ValueError(f"Unexpected file size: need bytes {start}:{end}, file has {len(fileContent)} bytes")
+                
+                values = struct.unpack("<" + "h" * dsize, fileContent[start:end])
+
+                signal = np.array(values,dtype=np.int16)
+                signal = signal.astype(np.float32)/8190 # Conversion en volt PIN LOW
+                # Stocker les données
+                voltage[j] = signal
+
+                # Accumulation du signal total
+                voltage_acc += signal
+
+        # Création du tableau temps
+        duree_mesure = (dsize * decimation) / SAMPLING_RATE 
+        time = np.linspace(0, duree_mesure, dsize, endpoint=False)
+
+        # Calcul de la moyenn et centrage du signal accumulé
+        moyenne = np.mean(voltage_acc)
+        voltage_acc = voltage_acc - moyenne
+
+        print(f"Fichier {pathFile_csv} lu. {len(voltage)} signaux FID chargés.")
+        return time, voltage, voltage_acc
+
 def plot_acc(graph_name, time_axis, voltage_matrix):
     
     amountFID = len(voltage_matrix)
@@ -237,7 +294,7 @@ file_path_all = file_path_all[:-1]
 plt.figure()
 for i in range(Number_of_files):
     file_path = file_path_all + str(i)
-    time_array, voltage_array_matrix, voltageAcc_array = open_file(file_path, nombre_de_FID=FidNb)
+    time_array, voltage_array_matrix, voltageAcc_array = open_file_bin(file_path, nombre_de_FID=FidNb)
      
     print("Affichage de la FID...")
 
@@ -255,7 +312,7 @@ for i in range(Number_of_files):
 plt.figure()
 for i in range(Number_of_files):
     file_path = file_path_all + str(i)
-    time_array, voltage_array_matrix, voltageAcc_array = open_file(file_path, nombre_de_FID=FidNb)
+    time_array, voltage_array_matrix, voltageAcc_array = open_file_bin(file_path, nombre_de_FID=FidNb)
     
     freq_ex = Start_freq + Step_freq*i
     

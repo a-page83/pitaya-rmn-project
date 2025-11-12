@@ -29,8 +29,14 @@ SRC := $(patsubst %,%.c,$(PRGS))
 
 all: $(PRGS)
 
-$(PRGS): %: %.c
-	$(CC) $< $(CFLAGS) $(LDFLAGS) $(LDLIBS) -o $@.exe
+
+
+$(PRGS): %: %.c functions.o
+	$(CC) $< $(CFLAGS) $(LDFLAGS) $(LDLIBS) -o $@.exe functions.o
+	
+# Compile functions.c into an object so programs can link against it
+functions.o: functions.c functions.h
+	$(CC) -c functions.c $(CFLAGS) -o functions.o
 
 clean:
 	$(RM) *.o
