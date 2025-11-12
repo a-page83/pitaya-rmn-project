@@ -282,9 +282,9 @@ def plot_fourier_transform(graph_name, time, voltage):
 
 FidNb = -1 #-1 Pour prendre toutes les FID
 
-Start_freq = 24.3429e+6-10e+3
-Step_freq = 2000
-Number_of_files = 10
+Start_freq = 24.3425e+6-100e+3
+Step_freq = 4000
+Number_of_files = 50
 
 print("Ouverture de : "+file_path_all)
 graph_name = "FindFreq_Auto"
@@ -311,39 +311,65 @@ for i in range(Number_of_files):
 ### plot FT
 plt.figure()
 for i in range(Number_of_files):
+    
     file_path = file_path_all + str(i)
     time_array, voltage_array_matrix, voltageAcc_array = open_file_bin(file_path, nombre_de_FID=FidNb)
     
+
     freq_ex = Start_freq + Step_freq*i
     
-    voltageAcc_array = voltageAcc_array[300:]
+    #voltageAcc_array = voltageAcc_array[300:] 
 
     #Filtrage :
     fs = 1/((time_array[10]-time_array[0])/10) 
     lowcut = 100.0
     highcut = 2000.0
     voltageAcc_array_filtered = butter_bandpass_filter(voltageAcc_array, lowcut, highcut, fs, order=3)
-
-
+    
     ## Calcul de la TF
-    dt = time_array[0]-time_array[1]
-    N = len(voltageAcc_array_filtered)
-    fft_values = np.fft.fft(voltageAcc_array_filtered)
-    freq = np.fft.fftfreq(N, dt)
+    if i == 0:
+        dt = time_array[0]-time_array[1]
+        N = len(voltageAcc_array)
+        freq = np.fft.fftfreq(N, dt)
+        freq_all = freq
+        tf_sum  = np.zeros(len(freq_all), dtype=float)
+
+        
+    fft_values = np.fft.fft(voltageAcc_array)
     freq = freq + freq_ex
     magnitude = np.abs(fft_values) * 2 / N  # Normalize amplitude
+       
+    freq_all     = np.union1d(freq_all, freq)
+    #tf_sum      = np.append(tf_sum,)
+    
 
+    for x, y in zip(freq, magnitude):
+        tf_sum[freq_all == x] += y
 
     print("Affichage de la TF...")
 
-    plt.plot(freq, magnitude, label= str(i))
+    plt.plot(freq, magnitude, label= str(i),marker='x')
     plt.title("Fourier Transform - " + graph_name)
     plt.xlabel("Frequency [Hz]")
     plt.ylabel("Amplitude")
-    plt.legend()
+    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    #plt.tight_layout(rect=[0, 0, 0.85, 1])
     plt.grid(True, which='both')
     plt.minorticks_on()
     plt.grid(which='minor', alpha=0.2)
     plt.grid(which='major', alpha=0.5)
+
+plt.figure()
+plt.plot(freq_all, tf_sum, label="tf sum", marker='x')
+plt.title("Fourier Transform - " + graph_name)
+plt.xlabel("Frequency [Hz]")
+plt.ylabel("Amplitude")
+plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+#plt.tight_layout(rect=[0, 0, 0.85, 1])
+plt.grid(True, which='both')
+plt.minorticks_on()
+plt.grid(which='minor', alpha=0.2)
+plt.grid(which='major', alpha=0.5)
+
 
 plt.show()
