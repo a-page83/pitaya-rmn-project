@@ -282,7 +282,7 @@ def plot_fourier_transform(graph_name, time, voltage):
 #############################################################
 
 FidNb = -1 #-1 Pour prendre toutes les FID
-PythonFinalizationError
+
 Start_freq = 24.3425e+6-100e+3
 Step_freq = 4000
 Number_of_files = 50
