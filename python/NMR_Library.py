@@ -80,7 +80,7 @@ def accumulate(voltage_matrix,nb_accumulated):
     
     return voltage_acc
 
-def open_file(pathFile_csv, nombre_de_FID):
+def open_file_csv(pathFile_csv, nombre_de_FID):
     """
     Read a CSV-format measurement file and return time axis, list of FID arrays, and accumulated signal.
     CSV header expected: [dsize, decimation, nombre_de_FID, gain, offset, nb_bits]
