@@ -218,8 +218,11 @@ def plot_acc(graph_name, time_axis, voltage_matrix):
     plt.xlabel('Temps (s)')
     plt.ylabel('Tension (V)')
     plt.grid(False, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
-    #plt.legend(loc='upper right')
-    plt.tight_layout()
+    plt.legend(loc='upper right', ncol=2)
+    plt.grid(True, which='both')
+    plt.minorticks_on()
+    plt.grid(which='minor', alpha=0.2)
+    plt.grid(which='major', alpha=0.5)
     plt.show()
 
 def plot_single(graph_name, time_axis, voltage_matrix, FID_nb):
