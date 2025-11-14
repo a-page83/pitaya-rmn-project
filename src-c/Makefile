@@ -13,15 +13,9 @@ ifeq ($(DEBUG), 1)
 endif
 
 # List of compiled object files (not yet linked to executable)
-
-PRGS =  sin\
-	Burst\
-	Acquisition_axi\
-	digital_led_blink\
-	Simulation\
-	SimulationV1\
-	Find_excitation_time\
-	Find_Frequency\
+PRGS =
+		Acquisition_axi\
+		Simulation\
 
 OBJS := $(patsubst %,%.o,$(PRGS))
 SRC := $(patsubst %,%.c,$(PRGS))
