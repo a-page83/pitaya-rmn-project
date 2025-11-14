@@ -105,12 +105,12 @@ def open_file(pathFile_csv, nombre_de_FID):
         #print(f"Fichier {pathFile_csv} lu. {len(voltage)} signaux FID chargés.")
         return time, voltage, voltage_acc
 
-def open_file_bin(pathFile_csv,nombre_de_FID):
+def open_file_bin(pathFile_bin,nombre_de_FID):
         
         "open the file at the given path and give back the numpy vectors time, voltage"
         voltage_acc = []
 
-        with open(pathFile_csv, mode='rb') as file: # b is important -> binary
+        with open(pathFile_bin, mode='rb') as file: # b is important -> binary
             # Lire tout le contenu binaire du fichier ouvert (retourne des bytes)
             fileContent = file.read()
 
@@ -319,3 +319,9 @@ def plot_fourier_transform(graph_name, time, voltage):
     #plt.tight_layout()
     #plt.show(block=True)
 
+def open_file_dialog():
+    root = tk.Tk()
+    root.withdraw()
+    
+    file_path = filedialog.askopenfilename()
+    return file_path
