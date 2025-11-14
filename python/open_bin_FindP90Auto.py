@@ -102,7 +102,7 @@ def open_file(pathFile_csv, nombre_de_FID):
 
         voltage_acc = accumulate(voltage,nb_accumulated=nombre_de_FID)
 
-        #print(f"Fichier {pathFile_csv} lu. {len(voltage)} signaux FID chargés.")
+        print(f"Fichier {pathFile_csv} lu. {len(voltage)} signaux FID chargés.")
         return time, voltage, voltage_acc
 
 def open_file_bin(pathFile_csv,nombre_de_FID):
@@ -283,22 +283,26 @@ def plot_fourier_transform(graph_name, time, voltage):
 
 FidNb = -1 #-1 Pour prendre toutes les FID
 
-Start_freq = float(file_path_all.split('_')[3])
-Step_freq = float(file_path_all.split('_')[2])
 Number_of_files = int(file_path_all.split('_')[1])
+print(Number_of_files)
 
 print("Ouverture de : "+file_path_all)
-graph_name = "FindFreq_Auto"
+graph_name = "FindP90_Auto"
 
 file_path_all = file_path_all[:-1]
-# Initialize the progress bar
-progress_bar = tqdm(total=Number_of_files-1, desc="Processing files FID", unit="file")
+
 plt.figure()
+progress_bar = tqdm(total=Number_of_files-1, desc="Processing files", unit="file")
 for i in range(Number_of_files):
+    # Progress bar using tqdm
+    
     progress_bar.update(1)
+    
     file_path = file_path_all + str(i)
     time_array, voltage_array_matrix, voltageAcc_array = open_file_bin(file_path, nombre_de_FID=FidNb)
      
+    #print("Affichage de la FID...")
+
     # Affichage du signal accumulé
     plt.plot(time_array, voltageAcc_array, marker='+', linestyle='-', label=str(i), linewidth=2)
     
@@ -307,20 +311,22 @@ for i in range(Number_of_files):
     plt.xlabel('Temps (s)')
     plt.ylabel('Tension (V)')
     plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
-    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), ncol=2)
+    plt.legend()
 
 ### plot FT
-progress_bar.close()
-progress_bar = tqdm(total=Number_of_files-1, desc="Processing files TF", unit="file")
 plt.figure()
+# Initialisation
+max_magnitude = 0
+freq_at_max_magnitude = 0
+
+progress_bar.close()
+progress_bar = tqdm(total=Number_of_files-1, desc="Processing files", unit="file")
 for i in range(Number_of_files):
     progress_bar.update(1)
+
     file_path = file_path_all + str(i)
     time_array, voltage_array_matrix, voltageAcc_array = open_file_bin(file_path, nombre_de_FID=FidNb)
-    
-
-    freq_ex = Start_freq + Step_freq*i
-    
+        
     #voltageAcc_array = voltageAcc_array[300:] 
 
     #Filtrage :
@@ -336,27 +342,19 @@ for i in range(Number_of_files):
     freq = np.fft.fftfreq(N, dt)
     
     fft_values = np.fft.fft(voltageAcc_array)
-    freq = freq + freq_ex
     magnitude = np.abs(fft_values) * 2 / N  # Normalize amplitude
-
-    if i==0:
-        freq_all = freq
-        tf_sum = magnitude
-
-    g0 = interp1d(freq_all, tf_sum,bounds_error=False,fill_value=0.0)
-    freq_all = np.union1d(freq_all, freq)
-    g1 = interp1d(freq, magnitude,bounds_error=False,fill_value=0.0)
-    g1_values = g1(freq_all)
-    g0_values = g0(freq_all)
-
-    tf_sum = g1_values + g0_values 
-
     
+    max_magnitude_current = np.max(magnitude)
+    if np.max(magnitude) > max_magnitude:
+        index_max = i
+        max_magnitude = np.max(magnitude)
+
+    #print("Affichage de la TF...")
     plt.plot(freq, magnitude, label= str(i),marker='x', linestyle='-')
     plt.title("Fourier Transform - " + graph_name)
     plt.xlabel("Frequency [Hz]")
     plt.ylabel("Amplitude")
-    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), ncol=2)
+    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     #plt.tight_layout(rect=[0, 0, 0.85, 1])
     plt.grid(True, which='both')
     plt.minorticks_on()
@@ -364,20 +362,9 @@ for i in range(Number_of_files):
     plt.grid(which='major', alpha=0.5)
 
 progress_bar.close()
-plt.figure()
-max_tf = np.max(tf_sum)
-max_freq = freq_all[np.argmax(tf_sum)]
-print(f"\033[92m Larmor Frequency : {max_freq} Hz\033[0m")
-
-plt.legend(['Sum TF', f"Max: {max_tf:.2f} at {max_freq:.2f} Hz"], loc='center left', bbox_to_anchor=(1, 0.5))
-plt.plot(freq_all, tf_sum, label='Sum TF', marker='x', linestyle='-')
-plt.title("Sum Fourier Transform to find freq- " + graph_name)
-plt.xlabel("Frequency [Hz]")
-plt.ylabel("Amplitude")
-plt.legend(loc='center left',title="Larmor Freq ="+str(max_freq))
-plt.tight_layout()
-plt.grid(True, which='both')
-plt.minorticks_on()
-plt.grid(which='minor', alpha=0.2)
-plt.grid(which='major', alpha=0.5)
+step_excitation = 2e-6 #float(file_path_all.split('_')[3])
+excitation_initial = float(file_path_all.split('_')[2])
+excitation_duration_seconds_best = (index_max)*step_excitation + excitation_initial
+print("Durée d'excitation optimale trouvée : "+str(excitation_duration_seconds_best)+" s pour un max de TF de "+str(max_magnitude)+" à l'index "+str(index_max))
 plt.show()
+

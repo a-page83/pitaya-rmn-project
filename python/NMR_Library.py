@@ -1,4 +1,3 @@
-
 import csv
 import matplotlib.pyplot as plt
 import numpy as np
@@ -14,16 +13,17 @@ from scipy.signal import freqz
 from scipy.signal import butter, lfilter
 from scipy.interpolate import interp1d
 import struct
-from tqdm import tqdm
-
 
 SAMPLING_RATE = 125e+6
+PORT = 22
+USERNAME = "root"
+PASSWORD = "root"
+REMOTE_PATH = "Pitaya-Tests/" 
+REMOTE_FOLDER = "Pitaya-Tests"
+SAMPLING_RATE = 125e+6
 
-
-root = tk.Tk()
-root.withdraw()
-
-file_path_all = filedialog.askopenfilename()
+hostName = "169.254.215.235"
+port = 22
 
 def butter_bandpass(lowcut, highcut, fs, order=5):
     return butter(order, [lowcut, highcut], fs=fs, btype='band')
@@ -161,6 +161,43 @@ def open_file_bin(pathFile_csv,nombre_de_FID):
         #print(f"Fichier {pathFile_csv} lu. {len(voltage)} signaux FID chargés.")
         return time, voltage, voltage_acc
 
+def create_file_wdate(nameFile):
+    # Créer le dossier local avec timestamp
+    now = datetime.datetime.now()
+    name_local_file = f"python/mesures/{nameFile}_{now.strftime('%Y%m%d_%H%M%S')}"
+    os.makedirs(name_local_file, exist_ok=True)
+    
+    return name_local_file
+
+def run_acquisition_command(samplesNb, dec,FidNb, FileName, larmorFrequency, excitationDuration, delayRepeat): #voir si file path marche    ùù
+    
+    filePath = "mesures/" + FileName
+    command = f"cd {REMOTE_FOLDER} && ./Acquisition_axi.exe {samplesNb} {dec} {FidNb} {filePath} {larmorFrequency} {excitationDuration} {delayRepeat}"
+    stdin, stdout, stderr = client.exec_command(command)
+    output = stdout.read().decode()
+    errors = stderr.read().decode()
+    #print(f"[CMD-SSH] {command}")
+    #if output:
+        #print("[OUTPUT SSH]\n", output)
+    
+    if errors:
+        print("[ERROR SHH]\n", errors)
+
+def download_file_sftp(nameRemoteFile,nameRemoteFolder,nameLocalFolder):
+    """Télécharge le fichier CSV via SFTP"""
+    
+    # Téléchargement du fichier
+    remote_path = REMOTE_PATH + nameRemoteFolder+'/' + nameRemoteFile
+    local_path = os.path.join(nameLocalFolder, nameRemoteFile)
+    
+    try:
+        sftp.get(remote_path, local_path)
+        #print(f"Téléchargé: {nameRemoteFile}")
+    except FileNotFoundError:
+        print(f"Fichier non trouvé: {remote_path}")
+    except Exception as e:
+        print(f"Erreur lors du téléchargement de {nameRemoteFile}: {e}")
+
 def plot_acc(graph_name, time_axis, voltage_matrix):
     
     amountFID = len(voltage_matrix)
@@ -279,105 +316,3 @@ def plot_fourier_transform(graph_name, time, voltage):
     #plt.tight_layout()
     #plt.show(block=True)
 
-#############################################################
-
-FidNb = -1 #-1 Pour prendre toutes les FID
-
-Start_freq = float(file_path_all.split('_')[3])
-Step_freq = float(file_path_all.split('_')[2])
-Number_of_files = int(file_path_all.split('_')[1])
-
-print("Ouverture de : "+file_path_all)
-graph_name = "FindFreq_Auto"
-
-file_path_all = file_path_all[:-1]
-# Initialize the progress bar
-progress_bar = tqdm(total=Number_of_files-1, desc="Processing files FID", unit="file")
-plt.figure()
-for i in range(Number_of_files):
-    progress_bar.update(1)
-    file_path = file_path_all + str(i)
-    time_array, voltage_array_matrix, voltageAcc_array = open_file_bin(file_path, nombre_de_FID=FidNb)
-     
-    # Affichage du signal accumulé
-    plt.plot(time_array, voltageAcc_array, marker='+', linestyle='-', label=str(i), linewidth=2)
-    
-    # Mise en forme du graphique
-    plt.title(f'{graph_name} - Accumulation de {FidNb}')
-    plt.xlabel('Temps (s)')
-    plt.ylabel('Tension (V)')
-    plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
-    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), ncol=2)
-
-### plot FT
-progress_bar.close()
-progress_bar = tqdm(total=Number_of_files-1, desc="Processing files TF", unit="file")
-plt.figure()
-for i in range(Number_of_files):
-    progress_bar.update(1)
-    file_path = file_path_all + str(i)
-    time_array, voltage_array_matrix, voltageAcc_array = open_file_bin(file_path, nombre_de_FID=FidNb)
-    
-
-    freq_ex = Start_freq + Step_freq*i
-    
-    #voltageAcc_array = voltageAcc_array[300:] 
-
-    #Filtrage :
-    fs = 1/((time_array[10]-time_array[0])/10) 
-    lowcut = 100.0
-    highcut = 2000.0
-    voltageAcc_array_filtered = butter_bandpass_filter(voltageAcc_array, lowcut, highcut, fs, order=3)
-    
-    ## Calcul de la TF
-    
-    dt = np.abs(time_array[0] - time_array[1])
-    N = len(voltageAcc_array)
-    freq = np.fft.fftfreq(N, dt)
-    
-    fft_values = np.fft.fft(voltageAcc_array)
-    freq = freq + freq_ex
-    magnitude = np.abs(fft_values) * 2 / N  # Normalize amplitude
-
-    if i==0:
-        freq_all = freq
-        tf_sum = magnitude
-
-    g0 = interp1d(freq_all, tf_sum,bounds_error=False,fill_value=0.0)
-    freq_all = np.union1d(freq_all, freq)
-    g1 = interp1d(freq, magnitude,bounds_error=False,fill_value=0.0)
-    g1_values = g1(freq_all)
-    g0_values = g0(freq_all)
-
-    tf_sum = g1_values + g0_values 
-
-    
-    plt.plot(freq, magnitude, label= str(i),marker='x', linestyle='-')
-    plt.title("Fourier Transform - " + graph_name)
-    plt.xlabel("Frequency [Hz]")
-    plt.ylabel("Amplitude")
-    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), ncol=2)
-    #plt.tight_layout(rect=[0, 0, 0.85, 1])
-    plt.grid(True, which='both')
-    plt.minorticks_on()
-    plt.grid(which='minor', alpha=0.2)
-    plt.grid(which='major', alpha=0.5)
-
-progress_bar.close()
-plt.figure()
-max_tf = np.max(tf_sum)
-max_freq = freq_all[np.argmax(tf_sum)]
-print(f"\033[92m Larmor Frequency : {max_freq} Hz\033[0m")
-
-plt.legend(['Sum TF', f"Max: {max_tf:.2f} at {max_freq:.2f} Hz"], loc='center left', bbox_to_anchor=(1, 0.5))
-plt.plot(freq_all, tf_sum, label='Sum TF', marker='x', linestyle='-')
-plt.title("Sum Fourier Transform to find freq- " + graph_name)
-plt.xlabel("Frequency [Hz]")
-plt.ylabel("Amplitude")
-plt.legend(loc='center left',title="Larmor Freq ="+str(max_freq))
-plt.tight_layout()
-plt.grid(True, which='both')
-plt.minorticks_on()
-plt.grid(which='minor', alpha=0.2)
-plt.grid(which='major', alpha=0.5)
-plt.show()
