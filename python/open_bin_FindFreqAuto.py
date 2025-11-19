@@ -27,9 +27,11 @@ file_path_all = filedialog.askopenfilename()
 FidNb = -1 #-1 Pour prendre toutes les FID
 
 ######### EXTRACTION OF PARAMETERS FROM FILENAME #############
-Start_freq = float(file_path_all.split('_')[3])
+Start_freq = float(file_path_all.split('_')[3]) - 5000
 Step_freq = float(file_path_all.split('_')[2])
 Number_of_files = int(file_path_all.split('_')[1])
+graphstart = 0.2 # in ms
+graphstop = 0.1 # in ms
 
 print("Ouverture de : "+file_path_all)
 graph_name = "FindFreq_Auto"
@@ -41,6 +43,10 @@ for i in range(Number_of_files):
     progress_bar.update(1)
     file_path = file_path_all + str(i)
     time_array, voltage_array_matrix, voltageAcc_array = nmr.open_file_bin(file_path, nombre_de_FID=FidNb)
+
+    dt = np.abs(time_array[0] - time_array[1])   
+    voltageAcc_array = voltageAcc_array[int(graphstart/(1000*dt)):len(voltageAcc_array)-int(graphstop/(1000*dt))]
+    time_array = time_array[int(graphstart/(1000*dt)):len(voltageAcc_array)+int(graphstart/(1000*dt))]
     
     # Affichage du signal accumulé
     plt.figure(1)
@@ -72,10 +78,12 @@ for i in range(Number_of_files):
     
     ## Calcul de la TF
     
-    dt = np.abs(time_array[0] - time_array[1])
+    dt = np.abs(time_array[0] - time_array[1])   
+    voltageAcc_array = voltageAcc_array[int(graphstart/(1000*dt)):len(voltageAcc_array)-int(graphstop/(1000*dt))]
+
     N = len(voltageAcc_array)
     freq = np.fft.fftfreq(N, dt)
-    
+
     fft_values = np.fft.fft(voltageAcc_array)
     freq = freq + freq_ex
     magnitude = np.abs(fft_values) * 2 / N  # Normalize amplitude
