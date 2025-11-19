@@ -30,37 +30,37 @@ name_of_device = "Pure Device"
 type_of_antenna = "0.8"
 experiment_name = "test.bin"
 
+########################################### PARAMETERS TO MODIFY #####################################################
 
-sample_Amount               = 424*10              #Number of points measured (MAX = 524288) must be a multiple of 2
-decimation                  = 1216*2                   #Decimation
-aquisiton_Amount            = 1             #Nubmer of acquisitons
-larmor_Frequency_Hertz      = 13600000    #Larmor frequency # 24.3417e+6   
-excitation_duration_seconds = 40e-6     #Excitation time
+sample_Amount               = 424*4              #Number of points measured (MAX = 524288) must be a multiple of 2
+decimation                  = 1216/2                   #Decimation
+aquisiton_Amount            = 2000             #Nubmer of acquisitons
+larmor_Frequency_Hertz      = 13300000         #Larmor frequency # 24.3417e+6   
+excitation_duration_seconds = 60e-6     #Excitation time
 delay_repeat_useconds       = 0.1e+6
 experiment_name_all_files = "Stepfreq"
 
-Number_of_files             = 2
-step_freq                   = 4e+3
+Number_of_files             = 200
+step_freq                   = 5e+3
+
+graphstart = 0.2 # in ms
+
+######################################## END OF PARAMETERS TO MODIFY ##################################################
 
 total_time = (sample_Amount * decimation)/SAMPLING_RATE
-print(f"temps mesuré : {total_time}s")
-## print(f"temps total : {total_time*aquisiton_Amount}")
-
 nb_cycles = larmor_Frequency_Hertz*excitation_duration_seconds
-#print(f"nb cycles burst : {nb_cycles}")
-
 temps_secondes = (total_time+delay_repeat_useconds*1e-6)*aquisiton_Amount+3
-#print(f"temps total secondes: {temps_secondes}")
 
-print(f"temps total :"+str(datetime.timedelta(seconds=temps_secondes*Number_of_files)))
-print("Name of file : " + experiment_name_all_files)
+print(f"Measured time : {total_time}s")
+print(f"Total time :"+str(datetime.timedelta(seconds=temps_secondes*Number_of_files)))
+print("Name of files : " + experiment_name_all_files)
 
 ### Display parameters and ask for confirmation
 try:
     if not sys.stdin.isatty():
         print("No interactive terminal detected. Aborting.")
         sys.exit(1)
-    resp = input("Continue and start acquisitions? [y/N]: ").strip().lower()
+    resp = input("Continue and start acquisitions? [y/n]: ").strip().lower()
 except (EOFError, KeyboardInterrupt):
     print("\nAborted.")
     sys.exit(1)
@@ -74,7 +74,7 @@ nmr.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 nmr.client.connect(hostName, username=USERNAME, password=PASSWORD,port=port)
 print(f"[INFO] Connexion SSH établie à {hostName}")
 
-transport = paramiko.Transport((hostName, PORT))
+transport = paramiko.Transport((hostName, port))
 transport.connect(username=USERNAME, password=PASSWORD)
 nmr.sftp = paramiko.SFTPClient.from_transport(transport)
 print(f"[INFO] Connexion SFTP établie à {hostName}")
@@ -106,17 +106,21 @@ for i in range(Number_of_files):
     #Filtrage :
     fs = 1/((time_array[10]-time_array[0])/10) 
     lowcut = 100.0
-    highcut = 2000.0
+    highcut = 15000.0
     voltageAcc_array_filtered = nmr.butter_bandpass_filter(voltageAcc_array, lowcut, highcut, fs, order=3)
     
     ## Calcul de la TF
     
     dt = np.abs(time_array[0] - time_array[1])
+
+    voltageAcc_array = voltageAcc_array[int(graphstart/(1000*dt)):]
+    time_array = time_array[int(graphstart/(1000*dt)):]
+
     N = len(voltageAcc_array)
     freq = np.fft.fftfreq(N, dt)
     
     fft_values = np.fft.fft(voltageAcc_array)
-    freq = freq + (larmor_Frequency_Hertz-1000)            # Décalage de la TF à la fréquence de Larmor
+    freq = freq + (larmor_Frequency_Hertz-5000)            # Décalage de la TF à la fréquence de Larmor
     magnitude = np.abs(fft_values) * 2 / N  # Normalize amplitude
 
     if i==0:
