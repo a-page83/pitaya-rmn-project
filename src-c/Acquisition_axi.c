@@ -72,7 +72,6 @@ int main(int argc, char **argv)
             return -1;
     }
 
-
     //// INITIALISATION AQUISITION ///////
     if(rp_AcqReset()!=RP_OK){
         fprintf(stderr, "rp_AcqReset failed!\n");
@@ -170,16 +169,21 @@ int main(int argc, char **argv)
 
 
     //// ---- BOUCLE DE FICHIERS ---- ////
-    rp_DpinSetState(RP_LED0+1, RP_HIGH);
+    
     clock_t begin = clock();
     int i=0;
     int num_led = 1;
+    rp_pinState_t RP_LED;
     for (i=0;i<number_of_files;i++){
-        num_led = (i*number_of_files)/5;
+        num_led = (int)((double)i / number_of_files * 6);
+        RP_LED = RP_LED0 + (num_led);
+        for (int k=0; k<=num_led-1; k++){
+            rp_DpinSetState(RP_LED0 + k, RP_HIGH);
+        }
         if(i%2){
-            rp_DpinSetState(RP_LED0+1, RP_HIGH);}
+            rp_DpinSetState(RP_LED, RP_HIGH);}
         else{
-            rp_DpinSetState(RP_LED0+1, RP_LOW);
+            rp_DpinSetState(RP_LED, RP_LOW);
         }
         fillState = false;
         
@@ -252,7 +256,10 @@ int main(int argc, char **argv)
     }
     clock_t end = clock();
     double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-    rp_DpinSetState(RP_LED0+1, RP_LOW);
+    
+    for (int j=0; j<=6; j++){
+        rp_DpinSetState(RP_LED0 + j, RP_LOW);
+    }
 
     printf("Temps d'execution : %lf\n",time_spent);
 
