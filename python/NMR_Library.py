@@ -211,7 +211,7 @@ def run_acquisition_command(samplesNb, dec,FidNb, FileName, larmorFrequency, exc
     This function expects a global `client` paramiko.SSHClient to be already connected.
     Parameters match the remote Acquisition_axi.exe command-line arguments.
     """
-    filePath = "mesures/" + FileName
+    filePath = "mesures/" + "mesure.bin"
     command = f"cd {REMOTE_FOLDER} && ./Acquisition_axi.exe {samplesNb} {dec} {FidNb} {filePath} {larmorFrequency} {excitationDuration} {delayRepeat}"
     stdin, stdout, stderr = client.exec_command(command)
     output = stdout.read().decode()
@@ -228,7 +228,8 @@ def download_file_sftp(nameRemoteFile,nameRemoteFolder,nameLocalFolder):
       nameRemoteFolder : remote subfolder under REMOTE_PATH
       nameLocalFolder  : local directory to save into
     """
-    remote_path = REMOTE_PATH + nameRemoteFolder+'/' + nameRemoteFile
+        
+    remote_path = REMOTE_PATH + nameRemoteFolder+'/' + "mesure.bin"
     local_path = os.path.join(nameLocalFolder, nameRemoteFile)
     
     try:
