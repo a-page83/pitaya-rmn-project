@@ -16,6 +16,7 @@ from scipy.interpolate import interp1d
 import struct
 from tqdm import tqdm
 import NMR_Library as nmr
+import plotly.graph_objects as go
 
 SAMPLING_RATE = 125e+6
 
@@ -29,8 +30,8 @@ FidNb = -1 #-1 Pour prendre toutes les FID
 ######### EXTRACTION OF PARAMETERS FROM FILENAME #############
 Start_freq = 0 #float(file_path_all.split('_')[3]) - 5000
 Step_freq = float(file_path_all.split('_')[2])
-Number_of_files = 350 #int(file_path_all.split('_')[1])
-graphstart = 0 # in ms
+Number_of_files = int(file_path_all.split('_')[1])
+graphstart = 0.00005 # in ms
 graphstop = 0.1 # in ms
 
 print("Ouverture de : "+file_path_all)
@@ -38,6 +39,9 @@ graph_name = "FindFreq_Auto"
 
 file_path_all = file_path_all[:-1] # Getting the path without the last character (which is supposed to be a number) for looping over all files
 progress_bar = tqdm(total=Number_of_files-1, desc="Processing files FID", unit="file") # Initialize the progress bar
+
+fig1 = go.Figure()
+fig2 = go.Figure()
 
 for i in range(Number_of_files):
     progress_bar.update(1)
@@ -65,7 +69,7 @@ for i in range(Number_of_files):
     N = len(voltageAcc_array)
     freq = np.fft.fftfreq(N, dt)
     fft_values = np.fft.fft(voltageAcc_array)
-    freq = freq + freq_ex
+    #freq = freq + freq_ex
     magnitude = np.abs(fft_values) * 2 / N  # Normalize amplitude
 
     # Summing all TFs together
@@ -79,26 +83,24 @@ for i in range(Number_of_files):
     g0_values = g0(freq_all)
     tf_sum = g1_values + g0_values 
 
-    # Plotting the FID (time domain)
-    plt.figure(1)
-    plt.plot(time_array, voltageAcc_array, marker='+', linestyle='-', label=str(i), linewidth=2)
-    plt.title(f'{graph_name} - Accumulation de {FidNb}')
-    plt.xlabel('Temps (s)')
-    plt.ylabel('Tension (V)')
-    plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
-    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), ncol=2)
+    fig1.add_trace(go.Scattergl( # <--- Scattergl est essentiel pour la performance
+        x=time_array, 
+        y=voltageAcc_array, 
+        mode='lines', 
+        opacity=1,       # Transparence pour gérer la superposition
+        line=dict(width=1), # Ligne fine
+        showlegend=False    # Important : désactiver la légende si vous avez bcp de courbes
+    ))
 
-    # Plotting the TF
-    plt.figure(2)
-    plt.plot(freq, magnitude, label= str(i),marker='x', linestyle='-')
-    plt.title("Fourier Transform - " + graph_name)
-    plt.xlabel("Frequency [Hz]")
-    plt.ylabel("Amplitude")
-    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), ncol=2)
-    plt.grid(True, which='both')
-    plt.minorticks_on()
-    plt.grid(which='minor', alpha=0.2)
-    plt.grid(which='major', alpha=0.5)
+
+    fig2.add_trace(go.Scattergl(
+        x=freq, 
+        y=magnitude, 
+        mode='lines', 
+        opacity=1, 
+        line=dict(width=1),
+        showlegend=False
+    ))
 
 progress_bar.close()
 
@@ -107,16 +109,22 @@ max_freq = freq_all[np.argmax(tf_sum)]
 print(f"\033[92m Larmor Frequency : {max_freq} Hz\033[0m")
 
 #plotting the summed TF
-plt.figure(3)
-plt.legend(['Sum TF', f"Max: {max_tf:.2f} at {max_freq:.2f} Hz"], loc='center left', bbox_to_anchor=(1, 0.5))
-plt.plot(freq_all, tf_sum, label='Sum TF', marker='x', linestyle='-')
-plt.title("Sum Fourier Transform to find freq- " + graph_name)
-plt.xlabel("Frequency [Hz]")
-plt.ylabel("Amplitude")
-plt.legend(loc='center left',title="Larmor Freq ="+str(max_freq))
-plt.tight_layout()
-plt.grid(True, which='both')
-plt.minorticks_on()
-plt.grid(which='minor', alpha=0.2)
-plt.grid(which='major', alpha=0.5)
-plt.show()
+# plt.figure(3)
+# plt.legend(['Sum TF', f"Max: {max_tf:.2f} at {max_freq:.2f} Hz"], loc='center left', bbox_to_anchor=(1, 0.5))
+# plt.plot(freq_all, tf_sum, label='Sum TF', marker='x', linestyle='-')
+# plt.title("Sum Fourier Transform to find freq- " + graph_name)
+# plt.xlabel("Frequency [Hz]")
+# plt.ylabel("Amplitude")
+# plt.legend(loc='center left',title="Larmor Freq ="+str(max_freq))
+# plt.tight_layout()
+# plt.grid(True, which='both')
+# plt.minorticks_on()
+# plt.grid(which='minor', alpha=0.2)
+# plt.grid(which='major', alpha=0.5)
+# plt.show()
+
+fig1.update_layout(title="Figure 1")
+fig2.update_layout(title="Figure 2")
+
+fig1.show()
+fig2.show()
