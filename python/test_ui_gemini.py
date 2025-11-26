@@ -8,7 +8,9 @@ import os
 import json
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+from plotly_resampler import FigureResampler
 from scipy.interpolate import interp1d
+from tkinter import filedialog
 
 # Importation de votre librairie
 try:
@@ -22,7 +24,7 @@ class NMRApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Contrôle Pitaya NMR - Plotly & Save")
-        self.root.geometry("600x750") # Fenêtre plus compacte car les graphiques sont externes
+        self.root.geometry("950x900") # Fenêtre plus compacte car les graphiques sont externes
         
         self.is_running = False
         self.stop_event = threading.Event()
@@ -45,6 +47,8 @@ class NMRApp:
         # Style
         style = ttk.Style()
         style.configure("Bold.TLabel", font=("Segoe UI", 9, "bold"))
+
+        
 
         # --- Panneau Principal ---
         main_frame = ttk.Frame(self.root, padding="15")
@@ -73,20 +77,76 @@ class NMRApp:
         self.create_entry(param_frame, "fid_time", "Temps FID (us):", "5e6", 2, 2)
 
         # --- Section Balayage ---
-        sweep_frame = ttk.LabelFrame(main_frame, text="3. Balayage & Fichiers", padding="10")
-        sweep_frame.pack(fill=tk.X, pady=5)
+        open_frame = ttk.LabelFrame(main_frame, text="3. Balayage & Fichiers", padding="10")
+        open_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(5, 0))
         
-        self.create_entry(sweep_frame, "nb_files", "Nb Fichiers (Steps):", "1", 0)
-        self.create_entry(sweep_frame, "step_freq", "Pas de Fréquence (Hz):", "3000", 1)
-        self.create_entry(sweep_frame, "exp_name", "Nom Expérience:", "Stepfreq", 2)
-        self.create_entry(sweep_frame, "graph_start", "Début Graphe (ms):", "0", 3)
+        self.create_entry(open_frame, "nb_files", "Nb Fichiers (Steps):", "1", 0)
+        self.create_entry(open_frame, "step_freq", "Pas de Fréquence (Hz):", "3000", 1)
+        self.create_entry(open_frame, "exp_name", "Nom Expérience:", "Stepfreq", 2)
+        self.create_entry(open_frame, "graph_start", "Début Graphe (ms):", "0", 3)
+        
+        filter_frame = ttk.LabelFrame(main_frame, text="3. Réglages du filtre", padding="10")
+        filter_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=(0, 5))
+        
+        self.create_entry(filter_frame, "high_freq", "Fréquence haute (Hz)", "1000", 0)
+        self.create_entry(filter_frame, "low_freq", "Fréquence basse (Hz):", "3000", 1)
+        self.create_entry(filter_frame, "order", "Ordre du fitre", "1", 2)
+        
+        # --- Push buttons ---      
+        btn_frame = ttk.Frame(main_frame, padding="10")
+        btn_frame.pack(fill=tk.X, pady=10)
+        
+        ## - Freq offset -
+        # Variable
+        self.var_chk_btn_offset_freq = tk.BooleanVar(value=True)
+        # Widget 
+        # We link it to the variable using 'variable='
+        self.chk_btn_offset_freq = ttk.Checkbutton(
+            btn_frame, 
+            text="Ouvrir avec décalage", 
+            variable=self.var_chk_btn_offset_freq
+        )
+        self.chk_btn_offset_freq.pack(fill=tk.X, pady=2)
+        
+        ## - Freq multiple files -
+        # Variable
+        self.chk_btn_files = tk.BooleanVar(value=True)
+        # Widget 
+        # We link it to the variable using 'variable='
+        self.chk_btn_files = ttk.Checkbutton(
+            btn_frame, 
+            text="Ouvrir plusieurs fichiers ?", 
+            variable=self.chk_btn_files
+        )
+        self.chk_btn_files.pack(fill=tk.X, pady=2)
 
-        # --- Boutons ---
+        ## - Freq filter -
+     
+        self.chk_btn_filter = tk.BooleanVar(value=True)
+        self.chk_btn_filter = ttk.Checkbutton(
+            btn_frame, 
+            text="Filtrer la sortie ?", 
+            variable=self.chk_btn_filter
+        )
+        self.chk_btn_filter.pack(fill=tk.X, pady=2)
+
+        ## - Freq dash -
+ 
+        self.chk_btn_dash = tk.BooleanVar(value=True)
+        self.chk_btn_dash = ttk.Checkbutton(
+            btn_frame, 
+            text="Utiliser le moteur d'affichage ?", 
+            variable=self.chk_btn_dash
+        )
+        self.chk_btn_dash.pack(fill=tk.X, pady=2)
+
+
+
+        # --- Boutons to launch ---
         btn_frame = ttk.Frame(main_frame, padding="10")
         btn_frame.pack(fill=tk.X, pady=10)
 
-
-        #Mode 2 = Calcul des paramètres
+        # Calcul des paramètres
         self.btn_single = ttk.Button(btn_frame, text="ESTIMATION DU TEMPS", 
                                      command=lambda: self.print_parameters())
         self.btn_single.pack(fill=tk.X, pady=5)
@@ -109,6 +169,14 @@ class NMRApp:
         self.btn_stop = ttk.Button(btn_frame, text="⏹ ARRÊTER", 
                                    command=self.stop_acquisition, state=tk.DISABLED)
         self.btn_stop.pack(fill=tk.X, pady=5)
+
+        # --- Section open  ---
+        open_frame = ttk.LabelFrame(main_frame, text="3. Balayage & Fichiers", padding="10")
+        open_frame.pack(fill=tk.X, pady=5)
+        
+        self.btn_open = ttk.Button(open_frame, text="📂", width=3, 
+                         command=lambda: self.browse_open_file())
+        self.btn_open.pack(side=tk.RIGHT, padx=(5, 0))
 
         # --- Logs ---
         log_frame = ttk.LabelFrame(main_frame, text="Logs", padding="5")
@@ -215,7 +283,6 @@ class NMRApp:
         if  sample_Amount%2 != 0 :
             self.log(f"Sample Amount must be a multiple of 2","ERROR")
 
-
     def run_acquisition(self,mode):
         try:
             # Récupération des valeurs
@@ -264,16 +331,13 @@ class NMRApp:
             transport.connect(username=USER, password=PASS)
             nmr.sftp = paramiko.SFTPClient.from_transport(transport)
             
-            nameLocalFolder = nmr.create_file_wdate("FindFreqAuto_"+str(nb_files)+"_"+str(step_freq)+"_"+str(larmor_Frequency_Hertz))
+            nameLocalFolder = nmr.create_file_wdate("SweepFreq_"+str(nb_files)+"_"+str(step_freq)+"_"+str(larmor_Frequency_Hertz))
             
-            # Initialisation variables accumulation
-            freq_all = None
-            tf_sum = None
-
+        
             for i in range(nb_files):
                 if self.stop_event.is_set(): break
                 
-                self.log(f"--- Step {i+1}/{nb_files} : {larmor_Frequency_Hertz/1e6:.3f} MHz ---")
+                self.log(f"--- Step {i}/{nb_files} : {larmor_Frequency_Hertz/1e6:.3f} MHz ---")
                 
                 # Acquisition
                 nmr.run_acquisition_command(sample_Amount, decimation, acq_Amt, "mesures.bin", larmor_Frequency_Hertz, excitation_duration_seconds, delay_rep)
@@ -285,49 +349,12 @@ class NMRApp:
                 
                 # Traitement
                 file_path = os.path.join(nameLocalFolder, experiment_name)
-
-
-                # Note: adaptation légère si open_file_bin attend un chemin sans index
-                time_array, voltage_array_matrix, voltageAcc_array = nmr.open_file_bin(file_path, nombre_de_FID=-1)
-                
-                # Filtrage
-                fs = 1/((time_array[10]-time_array[0])/10)
-                voltageAcc_array = nmr.butter_bandpass_filter(voltageAcc_array, 1e6, 20e6, fs, order=3)
-                
-                # Coupe
-                dt = np.abs(time_array[0] - time_array[1])
-                idx = int(graph_start/(1000*dt))
-                volt_cut = voltageAcc_array[idx:]
-                time_cut = time_array[idx:]
-                
-                # FFT
-                N = len(volt_cut)
-                freq = np.fft.fftfreq(N, dt)
-                mag = np.abs(np.fft.fft(volt_cut)) * 2 / N
-
-                # Accumulation TF
-                if freq_all is None:
-                    freq_all = freq
-                    tf_sum = mag
-                else:
-                    g0 = interp1d(freq_all, tf_sum, bounds_error=False, fill_value=0.0)
-                    freq_all = np.union1d(freq_all, freq)
-                    g1 = interp1d(freq, mag, bounds_error=False, fill_value=0.0)
-                    tf_sum = g1(freq_all) + g0(freq_all)
-
-                # Mise à jour données partagées
-                self.data_store = {
-                    "time": time_cut, "voltage": volt_cut,
-                    "freq": freq, "mag": mag,
-                    "freq_sum": freq_all, "mag_sum": tf_sum,
-                    "iter": i+1,
-                    "max_freq_curr": freq[np.argmax(mag)],
-                    "max_freq_sum": freq_all[np.argmax(tf_sum)]
-                }
                 
                 larmor_Frequency_Hertz += step_freq
-
+            
             self.log("Acquisition terminée.")
+            self.data_store = {"file_path" : file_path}
+            self.open_file(filepath=file_path[:-1]) # Remove the index
             self.show_plotly() # Ouvre automatiquement à la fin
 
         except Exception as e:
@@ -341,38 +368,153 @@ class NMRApp:
             self.is_running = False
             self.btn_stop.config(state=tk.DISABLED)
 
+    def browse_open_file(self):
+        # Ouvre l'explorateur
+        filepath = filedialog.askopenfilename(
+            title="Sélectionner un fichier",
+            filetypes=[("Fichiers BIN", "*.bin"), ("Tous les fichiers", "*.*")]
+        )
+        
+        # Si l'utilisateur n'a pas annulé
+        if filepath:
+            self.open_file(filepath=filepath)
+            return
+
+    def open_file(self,filepath_all):
+        
+        p = {k: v.get() for k, v in self.inputs.items()}
+
+        # Initialisation variables accumulation
+        freq_all = None
+        tf_sum = None
+
+        graph_start = float(p['graph_start'])
+
+        # --- multiple file enabled ---
+        if self.chk_btn_files.get(): ## IF TICKBOX MULTIPLE FILES IS ON
+            Start_freq = 0 #float(filepath.split('_')[3]) - 5000
+            Step_freq = float(filepath_all.split('_')[2])
+            Number_of_files = int(filepath_all.split('_')[1])
+            if (Number_of_files >= 100) and (not self.chk_btn_dash.get()):
+                self.log("ENABLE DASH","ERROR")
+                return
+        else :
+            Number_of_files = 1
+
+        # --- if filter is enabled ---
+        if self.chk_btn_filter.get():
+            # Filtrage
+            fs = 1/((time_array[10]-time_array[0])/10)
+            voltageAcc_array = nmr.butter_bandpass_filter(voltageAcc_array, p['low_freq'], p['high_freq'], fs, order=p['order'])
+
+        # --- if dash is enabled ---
+        if self.chk_btn_dash.get():
+            fig1 = FigureResampler(go.Figure(), default_n_shown_samples=1000)
+            fig2 = FigureResampler(go.Figure(), default_n_shown_samples=1000)
+            self.log("No html file will be stored")
+        else :
+            fig1 = go.Figure()
+            fig2 = go.Figure()
+
+        for i in range(Number_of_files):
+            filepath = filepath_all+str(i)
+            time_array, voltage_array_matrix, voltageAcc_array = nmr.open_file_bin(filepath, nombre_de_FID=-1)
+            
+            # Coupe
+            dt = np.abs(time_array[0] - time_array[1])
+            idx = int(graph_start/(1000*dt))
+            volt_cut = voltageAcc_array[idx:]
+            time_cut = time_array[idx:]
+            
+            # FFT
+            N = len(volt_cut)
+            freq = np.fft.fftfreq(N, dt)
+            mag = np.abs(np.fft.fft(volt_cut)) * 2 / N        
+
+            ## --- check if dash is enabled ---
+            if self.chk_btn_dash.get():
+                fig1.add_trace(go.Scattergl( #Scattergl to use opengl
+                    mode='lines', 
+                    opacity=1,       
+                    showlegend=False    # Legende désactivée car bcp de courbes
+                ),hf_x=time_array, hf_y = voltageAcc_array)
+
+                fig2.add_trace(go.Scattergl(
+                    mode='lines', 
+                    opacity=1, 
+                    showlegend=False
+                ),hf_x = freq[:len(freq)//2], hf_y = mag[:len(mag)//2])
+            
+            else :
+                fig1.add_trace(go.Scattergl( #Scattergl to use opengl
+                    x=time_array, 
+                    y=voltageAcc_array, 
+                    mode='lines', 
+                    opacity=1,       
+                    showlegend=False    # Legende désactivée car bcp de courbes
+                ))
+
+                fig2.add_trace(go.Scattergl(
+                    x=freq, 
+                    y=mag, 
+                    mode='lines', 
+                    opacity=1, 
+                    showlegend=False
+                ))
+
+            # --- if Multiple files is enabled ==> SUM TF ---    
+            if self.chk_btn_files.get():
+                # Accumulation TF
+                if freq_all is None:
+                    freq_all = freq
+                    tf_sum = mag
+                else:
+                    g0 = interp1d(freq_all, tf_sum, bounds_error=False, fill_value=0.0)
+                    freq_all = np.union1d(freq_all, freq)
+                    g1 = interp1d(freq, mag, bounds_error=False, fill_value=0.0)
+                    tf_sum = g1(freq_all) + g0(freq_all)
+
+                if self.chk_btn_offset_freq.get():
+                    freq = freq + Start_freq + i*Step_freq
+
+            print(filepath)
+        
     # --- Plotly ---
     def show_plotly(self):
         d = self.data_store
-        if d["time"] is None:
-            self.log("Pas de données à afficher.")
-            return
+        file_path = d["file_path"]
 
-        self.log("Génération du graphique Plotly...")
+        self.open_file(file_path)
+
+        # if d["time"] is None:
+        #     self.log("Pas de données à afficher.")
+        #     return
+
+        # self.log("Génération du graphique Plotly...")
         
-        # Création de la figure avec sous-graphes
-        fig1 = go.Figure()
-        fig2 = go.Figure()
-        fig3 = go.Figure()
+        # # Création de la figure avec sous-graphes
+        # fig1 = go.Figure()
+        # fig2 = go.Figure()
+        # fig3 = go.Figure()
+        # if self.chk_btn_offset_freq.get():
+        #     # 1. Temporel
+        #     fig1.add_trace(go.Scatter(x=d['time'], y=d['voltage'], name="FID", mode='lines', line=dict(color='blue', width=1)))
 
-        # 1. Temporel
-        fig1.add_trace(go.Scatter(x=d['time'], y=d['voltage'], name="FID", mode='lines', line=dict(color='blue', width=1)))
+        # # 2. FFT Instant
+        # fig2.add_trace(go.Scatter(x=d['freq'], y=d['mag'], name="FFT Inst.", mode='lines', line=dict(color='orange')))
 
-        # 2. FFT Instant
-        fig2.add_trace(go.Scatter(x=d['freq'], y=d['mag'], name="FFT Inst.", mode='lines', line=dict(color='orange')))
+        # # 3. FFT Somme
+        # fig3.add_trace(go.Scatter(x=d['freq_sum'], y=d['mag_sum'], name="FFT Somme", mode='lines', line=dict(color='green')))
 
-        # 3. FFT Somme
-        fig3.add_trace(go.Scatter(x=d['freq_sum'], y=d['mag_sum'], name="FFT Somme", mode='lines', line=dict(color='green')))
-
-        # Mise en forme
-        fig1.update_xaxes(title_text="Temps (s)")
-        fig2.update_xaxes(title_text="Fréquence (Hz)")
-        fig3.update_xaxes(title_text="Fréquence (Hz)")
+        # # Mise en forme
+        # fig1.update_xaxes(title_text="Temps (s)")
+        # fig2.update_xaxes(title_text="Fréquence (Hz)")
+        # fig3.update_xaxes(title_text="Fréquence (Hz)")
         
-        # Affichage (Ouvre le navigateur)
-        fig1.show()
-        fig2.show()
-        fig3.show()
+        # # Affichage (Ouvre le navigateur)
+        # fig1.show()
+        # fig2.show()
+        # fig3.show()
 
 if __name__ == "__main__":
     root = tk.Tk()

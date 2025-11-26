@@ -221,24 +221,24 @@ def run_acquisition_command(samplesNb, dec,FidNb, FileName, larmorFrequency, exc
     if errors:
         print("[ERROR SHH]\n", errors)
 
-def download_file_sftp(nameRemoteFile,nameRemoteFolder,nameLocalFolder):
+def download_file_sftp(nameLocalFile,nameRemoteFolder,nameLocalFolder):
     """
     Download a remote file using an existing global SFTP client `sftp`.
     Parameters:
-      nameRemoteFile   : filename on the remote side
+      nameLocalFile    : filename on the local side
       nameRemoteFolder : remote subfolder under REMOTE_PATH
       nameLocalFolder  : local directory to save into
     """
         
     remote_path = REMOTE_PATH + nameRemoteFolder+'/' + "mesure.bin"
-    local_path = os.path.join(nameLocalFolder, nameRemoteFile)
+    local_path = os.path.join(nameLocalFolder, nameLocalFile)
     
     try:
         sftp.get(remote_path, local_path)
     except FileNotFoundError:
         print(f"Fichier non trouvé: {remote_path}")
     except Exception as e:
-        print(f"Erreur lors du téléchargement de {nameRemoteFile}: {e}")
+        print(f"Erreur lors du téléchargement de {nameLocalFile}: {e}")
 
 def plot_acc(graph_name, time_axis, voltage_matrix):
     """
