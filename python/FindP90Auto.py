@@ -3,11 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import datetime
 import paramiko
-import os
-import time
 import datetime
 from scipy import signal
-import struct
 import NMR_Library as nmr
 from tqdm import tqdm
 import sys
@@ -25,32 +22,22 @@ SAMPLING_RATE = 125e+6
 hostName = "169.254.215.235"
 port = 22
 
-nmr.client = paramiko.SSHClient()
-nmr.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-nmr.client.connect(hostName, username=USERNAME, password=PASSWORD,port=port)
-print(f"[INFO] Connexion SSH établie à {hostName}")
-
-transport = paramiko.Transport((hostName, PORT))
-transport.connect(username=USERNAME, password=PASSWORD)
-nmr.sftp = paramiko.SFTPClient.from_transport(transport)
-print(f"[INFO] Connexion SFTP établie à {hostName}")
-
 name_of_device = "Pure Device"
 type_of_antenna = "0.8"
 experiment_name = "test.bin"
 
 ########################################### PARAMETERS TO MODIFY #####################################################
 
-sample_Amount = 424*10              #Number of points measured (MAX = 524288) must be a multiple of 2
-decimation = 1216*2                   #Decimation
-aquisiton_Amount = 1             #Nubmer of acquisitons
-larmor_Frequency_Hertz = 24.3425e+6 - 100000    #Larmor frequency # 24.3417e+6   
-excitation_duration_seconds = 50e-6     #Excitation time
+sample_Amount = 524288 #424*10              #Number of points measured (MAX = 524288) must be a multiple of 2
+decimation = 1#1216*2                   #Decimation
+aquisiton_Amount = 100             #Nubmer of acquisitons
+larmor_Frequency_Hertz = 13.46e+6    #Larmor frequency # 24.3417e+6   
+excitation_duration_seconds = 1e-6     #Excitation time
 delay_repeat_useconds = 0.1e+6
-experiment_name_all_files = "Stepfreq"
+experiment_name_all_files = "StepP90"
 
-Number_of_files = 10
-step_excitation_duration_seconds = 5e-6
+Number_of_files = 30
+step_excitation_duration_seconds = 2e-6
 
 ##"###################################### END OF PARAMETERS TO MODIFY ##################################################
 
@@ -63,6 +50,15 @@ print(f"Temps mesuré : {total_time}s")
 print(f"Temps total :"+str(datetime.timedelta(seconds=temps_secondes*Number_of_files)))
 print("Name of file : " + experiment_name_all_files)
 
+nmr.client = paramiko.SSHClient()
+nmr.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+nmr.client.connect(hostName, username=USERNAME, password=PASSWORD,port=port)
+print(f"[INFO] Connexion SSH établie à {hostName}")
+
+transport = paramiko.Transport((hostName, PORT))
+transport.connect(username=USERNAME, password=PASSWORD)
+nmr.sftp = paramiko.SFTPClient.from_transport(transport)
+print(f"[INFO] Connexion SFTP établie à {hostName}")
 ### Display parameters and ask for confirmation
 try:
     if not sys.stdin.isatty():
