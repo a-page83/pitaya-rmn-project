@@ -13,6 +13,7 @@ from scipy.signal import freqz   # not used in current code, left for future fil
 from scipy.signal import butter, lfilter
 from scipy.interpolate import interp1d
 import struct                    # binary unpacking for .bin reader
+import plotly.graph_objects as go
 
 # Constants used across the module
 SAMPLING_RATE = 125e+6          # device sampling rate in Hz (important for time axis)
@@ -371,3 +372,39 @@ def open_file_dialog():
     
     file_path = filedialog.askopenfilename()
     return file_path
+
+def plot_fourier_transform_plotly(graph_name, time, voltage):
+    """
+    Compute and plot a simple (unshifted) FFT of a single voltage trace.
+    - time : time axis (1D)
+    - voltage : corresponding samples (1D)
+    The plot shows both positive and negative frequencies unless further filtered.
+    """
+    time = np.array(time)
+    voltage = np.array(voltage)
+
+    # Sampling interval and frequency
+    dt = time[1] - time[0]
+    fs = 1 / dt
+
+    # FFT
+    N = len(voltage)
+    fft_values = np.fft.fft(voltage)
+    freq = np.fft.fftfreq(N, dt)
+
+    # Magnitude (normalized)
+    magnitude = np.abs(fft_values) * 2 / N
+
+    fig = go.Figure()
+    fig.add_trace(go.Scattergl( #Scattergl to use opengl
+        x=freq, 
+        y=magnitude, 
+        mode='lines', 
+        opacity=1,       
+        showlegend=False    # Legende désactivée car bcp de courbes
+    ))
+
+    fig.update_layout(title="TF")
+
+    fig.show_dash(mode='external')
+    # Note: consider plotting only positive frequencies (freq >= 0) for clarity.

@@ -17,6 +17,8 @@ import struct
 from tqdm import tqdm
 import NMR_Library as nmr
 import plotly.graph_objects as go
+from plotly_resampler import FigureResampler
+import random
 
 SAMPLING_RATE = 125e+6
 
@@ -31,6 +33,7 @@ FidNb = -1 #-1 Pour prendre toutes les FID
 Start_freq = 0 #float(file_path_all.split('_')[3]) - 5000
 Step_freq = float(file_path_all.split('_')[2])
 Number_of_files = int(file_path_all.split('_')[1])
+
 graphstart = 0.00005 # in ms
 graphstop = 0.1 # in ms
 
@@ -40,8 +43,8 @@ graph_name = "FindFreq_Auto"
 file_path_all = file_path_all[:-1] # Getting the path without the last character (which is supposed to be a number) for looping over all files
 progress_bar = tqdm(total=Number_of_files-1, desc="Processing files FID", unit="file") # Initialize the progress bar
 
-fig1 = go.Figure()
-fig2 = go.Figure()
+fig1 = FigureResampler(go.Figure(), default_n_shown_samples=1000)
+fig2 = FigureResampler(go.Figure(), default_n_shown_samples=1000)
 
 for i in range(Number_of_files):
     progress_bar.update(1)
@@ -83,24 +86,21 @@ for i in range(Number_of_files):
     g0_values = g0(freq_all)
     tf_sum = g1_values + g0_values 
 
-    fig1.add_trace(go.Scattergl( # <--- Scattergl est essentiel pour la performance
-        x=time_array, 
-        y=voltageAcc_array, 
+    fig1.add_trace(go.Scattergl( #Scattergl to use opengl
+        # x=time_array[::3], 
+        # y=voltageAcc_array[::3], 
         mode='lines', 
-        opacity=1,       # Transparence pour gérer la superposition
-        line=dict(width=1), # Ligne fine
-        showlegend=False    # Important : désactiver la légende si vous avez bcp de courbes
-    ))
-
+        opacity=1,       
+        showlegend=False    # Legende désactivée car bcp de courbes
+    ),hf_x=time_array, hf_y = voltageAcc_array)
 
     fig2.add_trace(go.Scattergl(
-        x=freq, 
-        y=magnitude, 
+        # x=freq, 
+        # y=magnitude, 
         mode='lines', 
         opacity=1, 
-        line=dict(width=1),
         showlegend=False
-    ))
+    ),hf_x = freq[:len(freq)//2], hf_y = magnitude[:len(magnitude)//2])
 
 progress_bar.close()
 
@@ -109,22 +109,30 @@ max_freq = freq_all[np.argmax(tf_sum)]
 print(f"\033[92m Larmor Frequency : {max_freq} Hz\033[0m")
 
 #plotting the summed TF
-# plt.figure(3)
-# plt.legend(['Sum TF', f"Max: {max_tf:.2f} at {max_freq:.2f} Hz"], loc='center left', bbox_to_anchor=(1, 0.5))
-# plt.plot(freq_all, tf_sum, label='Sum TF', marker='x', linestyle='-')
-# plt.title("Sum Fourier Transform to find freq- " + graph_name)
-# plt.xlabel("Frequency [Hz]")
-# plt.ylabel("Amplitude")
-# plt.legend(loc='center left',title="Larmor Freq ="+str(max_freq))
-# plt.tight_layout()
-# plt.grid(True, which='both')
-# plt.minorticks_on()
-# plt.grid(which='minor', alpha=0.2)
-# plt.grid(which='major', alpha=0.5)
-# plt.show()
+plt.figure(3)
+plt.legend(['Sum TF', f"Max: {max_tf:.2f} at {max_freq:.2f} Hz"], loc='center left', bbox_to_anchor=(1, 0.5))
+plt.plot(freq_all, tf_sum, label='Sum TF', marker='x', linestyle='-')
+plt.title("Sum Fourier Transform to find freq- " + graph_name)
+plt.xlabel("Frequency [Hz]")
+plt.ylabel("Amplitude")
+plt.legend(loc='center left',title="Larmor Freq ="+str(max_freq))
+plt.tight_layout()
+plt.grid(True, which='both')
+plt.minorticks_on()
+plt.grid(which='minor', alpha=0.2)
+plt.grid(which='major', alpha=0.5)
+plt.show()
 
-fig1.update_layout(title="Figure 1")
-fig2.update_layout(title="Figure 2")
+fig1.update_layout(title="FID")
+fig2.update_layout(title="TF")
+random_port_1 = random.randint(8050, 9000)
+random_port_2 = random.randint(8050, 9000)
+fig1.show_dash(mode='external',port=random_port_1)
+fig2.show_dash(mode='external',port=random_port_2)
 
-fig1.show()
-fig2.show()
+# fig1.show(renderer="browser")
+# fig2.show(renderer="browser")
+
+# folder = os.path.dirname(file_path_all)
+# fig1.write_html(os.path.join(folder,"Figure FID.html"))
+# fig2.write_html(os.path.join(folder,"Figure TF.html"))
