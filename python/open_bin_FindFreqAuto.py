@@ -61,8 +61,8 @@ for i in range(Number_of_files):
 
     ## Removing the edges of the FID according to graphstart and graphstop
     dt = np.abs(time_array[0] - time_array[1])   
-    voltageAcc_array = voltageAcc_array_filtered[int(graphstart/(1000*dt)):len(voltageAcc_array)-int(graphstop/(1000*dt))]
-    time_array = time_array[int(graphstart/(1000*dt)):len(voltageAcc_array)+int(graphstart/(1000*dt))]
+    #voltageAcc_array = voltageAcc_array_filtered[int(graphstart/(1000*dt)):len(voltageAcc_array)-int(graphstop/(1000*dt))]
+    #time_array = time_array[int(graphstart/(1000*dt)):len(voltageAcc_array)+int(graphstart/(1000*dt))]
     
     # omputing the excitation frequency for this acquisition
     freq_ex = Start_freq + Step_freq*i 

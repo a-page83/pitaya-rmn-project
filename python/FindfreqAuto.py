@@ -35,14 +35,14 @@ experiment_name = "test.bin"
 
 sample_Amount               = 524288/2 #424*4              #Number of points measured (MAX = 524288) must be a multiple of 2
 decimation                  = 1 #1216/2                   #Decimation
-aquisiton_Amount            = 1000             #Nubmer of acquisitons
-larmor_Frequency_Hertz      = 13950000        #Larmor frequency # 24.3417e+6   
-excitation_duration_seconds = 20e-6     #Excitation time
-total_FID_Time              = 0.1              #temps total FID en s 
+aquisiton_Amount            = 10           #Nubmer of acquisitons
+larmor_Frequency_Hertz      = 13559820       #Larmor frequency # 24.3417e+6   
+excitation_duration_seconds = 10e-6     #Excitation time
+total_FID_Time              = 5            #temps total FID en s 
 experiment_name_all_files = "Stepfreq"
 
-Number_of_files             = 200
-step_freq                   = 5e+3
+Number_of_files             = 1
+step_freq                   = 1e+3
 
 graphstart = 0 # in ms
 
@@ -51,10 +51,11 @@ graphstart = 0 # in ms
 total_time = (sample_Amount * decimation)/SAMPLING_RATE
 delay_repeat_useconds  = (total_FID_Time - total_time)*1e+6
 nb_cycles = larmor_Frequency_Hertz*excitation_duration_seconds
-temps_secondes = (total_FID_Time*1e-6)*aquisiton_Amount+3
+temps_secondes = (total_FID_Time)*aquisiton_Amount+1
 
 print(f"Measured time : {total_time}s")
-print(f"Total time :"+str(datetime.timedelta(seconds=temps_secondes*Number_of_files)))
+print(f"Total Acc time :"+str(datetime.timedelta(seconds=temps_secondes)))
+print(f"Total time :"+str(datetime.timedelta(seconds=temps_secondes*Number_of_files + 3)))
 print("Name of files : " + experiment_name_all_files)
 
 ### Display parameters and ask for confirmation
@@ -83,7 +84,7 @@ print(f"[INFO] Connexion SFTP établie à {hostName}")
 
 ################ FOLDER NAME IS MADE TO WORK WITH OPEN_BIN_FIND_P90 ##############
 nameLocalFolder = nmr.create_file_wdate("FindFreqAuto_"+str(Number_of_files)+"_"+str(step_freq)+"_"+str(larmor_Frequency_Hertz))
-##################################################################################
+##################################################################################y
 
 progress_bar = tqdm(total=Number_of_files, desc="Processing Acquisitions to find Frequency", unit="file")
 
