@@ -88,7 +88,7 @@ class NMRApp:
 
         #Mode 2 = Calcul des paramètres
         self.btn_single = ttk.Button(btn_frame, text="ESTIMATION DU TEMPS", 
-                                     command=lambda: self.start_thread(mode=2))
+                                     command=lambda: self.print_parameters())
         self.btn_single.pack(fill=tk.X, pady=5)
 
         # Mode 0 = Frequency Sweep
@@ -109,11 +109,19 @@ class NMRApp:
         self.btn_stop = ttk.Button(btn_frame, text="⏹ ARRÊTER", 
                                    command=self.stop_acquisition, state=tk.DISABLED)
         self.btn_stop.pack(fill=tk.X, pady=5)
+
         # --- Logs ---
         log_frame = ttk.LabelFrame(main_frame, text="Logs", padding="5")
         log_frame.pack(fill=tk.BOTH, expand=True)
         self.log_text = tk.Text(log_frame, height=8, font=("Consolas", 9))
         self.log_text.pack(fill=tk.BOTH, expand=True)
+
+        # -- msgType settings --- 
+        self.log_text.tag_config("INFO", foreground="black")   # Texte normal
+        self.log_text.tag_config("SUCCESS", foreground="green") # Vert pour succès
+        self.log_text.tag_config("WARNING", foreground="orange") # Orange pour info importante
+        self.log_text.tag_config("ERROR", foreground="red")    # Rouge pour erreurs
+        self.log_text.tag_config("BLUE", foreground="blue")    # Bleu pour fréquence
 
     def create_entry(self, parent, key, label, default, row, col=1):
         """Helper pour créer label + entry et stocker la ref"""
@@ -123,8 +131,9 @@ class NMRApp:
         entry.grid(row=row, column=col*2+1, sticky="ew", padx=5, pady=2)
         self.inputs[key] = entry
 
-    def log(self, msg):
-        self.log_text.insert(tk.END, f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {msg}\n")
+    def log(self, msg,msgType="INFO"):
+        self.log_text.insert(tk.END, f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {msg}\n",msgType)
+        print(msg)
         self.log_text.see(tk.END)
 
     # --- Gestion des Paramètres (JSON) ---
@@ -161,7 +170,7 @@ class NMRApp:
         self.save_settings() 
         self.is_running = True
         self.stop_event.clear()
-        
+
         # Désactiver les boutons de start, activer le stop
         self.btn_sweep.config(state=tk.DISABLED)
         self.btn_single.config(state=tk.DISABLED)
@@ -178,6 +187,34 @@ class NMRApp:
         if self.is_running:
             self.log("Arrêt demandé...")
             self.stop_event.set()
+
+    def print_parameters(self):
+        p = {k: v.get() for k, v in self.inputs.items()}
+        
+        sample_Amount = int(float(p['sample_Amount']))
+        decimation = int(p['decimation'])
+        acq_Amt = int(p['acq_amt'])
+        larmor_Frequency_Hertz = float(p['larmor_Frequency_Hertz'])
+        excitation_duration_seconds = float(p['excitation_duration_seconds'])
+        fid_time = float(p['fid_time'])
+        nb_files = int(p['nb_files'])
+
+        step_freq = float(p['step_freq'])
+        ##setp_p90 = 
+
+        graph_start = float(p['graph_start'])
+
+        nb_cycles = larmor_Frequency_Hertz*excitation_duration_seconds
+        total_time = (sample_Amount * decimation) / 125e6
+        delay_rep = fid_time - total_time * 1e6
+        temps_secondes = total_time*nb_files*acq_Amt
+
+        self.log(f"total time : {str(datetime.timedelta(seconds=temps_secondes))}")
+        if nb_cycles < 0 or nb_cycles > 50000:
+            self.log(f"Bad Number of cycle : {nb_cycles} check pulse time or frequency !!!","ERROR")  # Prints in red
+        if  sample_Amount%2 != 0 :
+            self.log(f"Sample Amount must be a multiple of 2","ERROR")
+
 
     def run_acquisition(self,mode):
         try:
@@ -216,12 +253,7 @@ class NMRApp:
                     step_freq = 0     # Pas de changement de fréquence
                     exp_prefix = "Single_"
                     self.log(">>> Mode: Acquisition Simple (Freq Fixe)")
-                case 2 : 
-                    self.log(f"total time : {str(datetime.timedelta(seconds=temps_secondes))}")
-                    if nb_cycles < 0 or nb_cycles > 50000:
-                        self.log(f"\033[91m Bad Number of cycle : {nb_cycles} check pulse time or frequency !!!\033[0m")  # Prints in red
-                    return
-
+                
             # Connexion
             self.log(f"Connexion à {HOST}...")
             nmr.client = paramiko.SSHClient()
