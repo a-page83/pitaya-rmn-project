@@ -13,6 +13,7 @@ from tqdm import tqdm
 import sys
 from scipy.interpolate import interp1d
 
+
 USERNAME = "root"
 PASSWORD = "root"
 REMOTE_PATH = "Pitaya-Tests/" 
@@ -32,24 +33,25 @@ experiment_name = "test.bin"
 
 ########################################### PARAMETERS TO MODIFY #####################################################
 
-sample_Amount               = 424*4              #Number of points measured (MAX = 524288) must be a multiple of 2
-decimation                  = 1216/2                   #Decimation
-aquisiton_Amount            = 2000             #Nubmer of acquisitons
-larmor_Frequency_Hertz      = 13300000         #Larmor frequency # 24.3417e+6   
-excitation_duration_seconds = 60e-6     #Excitation time
-delay_repeat_useconds       = 0.1e+6
+sample_Amount               = 524288/2 #424*4              #Number of points measured (MAX = 524288) must be a multiple of 2
+decimation                  = 1 #1216/2                   #Decimation
+aquisiton_Amount            = 1000             #Nubmer of acquisitons
+larmor_Frequency_Hertz      = 13950000        #Larmor frequency # 24.3417e+6   
+excitation_duration_seconds = 20e-6     #Excitation time
+total_FID_Time              = 0.1              #temps total FID en s 
 experiment_name_all_files = "Stepfreq"
 
 Number_of_files             = 200
 step_freq                   = 5e+3
 
-graphstart = 0.2 # in ms
+graphstart = 0 # in ms
 
 ######################################## END OF PARAMETERS TO MODIFY ##################################################
 
 total_time = (sample_Amount * decimation)/SAMPLING_RATE
+delay_repeat_useconds  = (total_FID_Time - total_time)*1e+6
 nb_cycles = larmor_Frequency_Hertz*excitation_duration_seconds
-temps_secondes = (total_time+delay_repeat_useconds*1e-6)*aquisiton_Amount+3
+temps_secondes = (total_FID_Time*1e-6)*aquisiton_Amount+3
 
 print(f"Measured time : {total_time}s")
 print(f"Total time :"+str(datetime.timedelta(seconds=temps_secondes*Number_of_files)))
@@ -83,21 +85,23 @@ print(f"[INFO] Connexion SFTP établie à {hostName}")
 nameLocalFolder = nmr.create_file_wdate("FindFreqAuto_"+str(Number_of_files)+"_"+str(step_freq)+"_"+str(larmor_Frequency_Hertz))
 ##################################################################################
 
-progress_bar = tqdm(total=Number_of_files-1, desc="Processing Acquisitions to find Frequency", unit="file")
+progress_bar = tqdm(total=Number_of_files, desc="Processing Acquisitions to find Frequency", unit="file")
+
 for i in range(Number_of_files):
+
     progress_bar.update(1)
     experiment_name = experiment_name_all_files+str(i)
     nmr.run_acquisition_command(sample_Amount, 
                                 decimation, 
                                 aquisiton_Amount, 
-                                experiment_name, 
+                                "mesures.bin", 
                                 larmor_Frequency_Hertz, 
                                 excitation_duration_seconds,
                                 delay_repeat_useconds)
 
     nameRemoteFile = experiment_name
     nameRemoteFolder = "mesures"
-    nmr.download_file_sftp(nameRemoteFile,nameRemoteFolder,nameLocalFolder)
+    nmr.download_file_sftp(experiment_name,nameRemoteFolder,nameLocalFolder)
 
     file_path_all = nameLocalFolder + "/" + experiment_name_all_files
     file_path = file_path_all + str(i)
@@ -105,12 +109,12 @@ for i in range(Number_of_files):
 
     #Filtrage :
     fs = 1/((time_array[10]-time_array[0])/10) 
-    lowcut = 100.0
-    highcut = 15000.0
+    lowcut = 1000000.0
+    highcut = 20000000.0
     voltageAcc_array_filtered = nmr.butter_bandpass_filter(voltageAcc_array, lowcut, highcut, fs, order=3)
+    voltageAcc_array = voltageAcc_array_filtered
     
     ## Calcul de la TF
-    
     dt = np.abs(time_array[0] - time_array[1])
 
     voltageAcc_array = voltageAcc_array[int(graphstart/(1000*dt)):]
@@ -120,7 +124,7 @@ for i in range(Number_of_files):
     freq = np.fft.fftfreq(N, dt)
     
     fft_values = np.fft.fft(voltageAcc_array)
-    freq = freq + (larmor_Frequency_Hertz-5000)            # Décalage de la TF à la fréquence de Larmor
+    #freq = freq + (larmor_Frequency_Hertz-5000)            # Décalage de la TF à la fréquence de Larmor
     magnitude = np.abs(fft_values) * 2 / N  # Normalize amplitude
 
     if i==0:
@@ -136,26 +140,26 @@ for i in range(Number_of_files):
     tf_sum = g1_values + g0_values 
      
     # Affichage du signal accumulé
-    plt.figure(1)
-    plt.plot(time_array, voltageAcc_array, marker='+', linestyle='-', label=str(i), linewidth=2)
-    plt.title(f'{"FID Find Freq"} - Accumulation de {Number_of_files}')
-    plt.xlabel('Temps (s)')
-    plt.ylabel('Tension (V)')
-    plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
-    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), ncol=2)
+    # plt.figure(1)
+    # plt.plot(time_array, voltageAcc_array, marker='+', linestyle='-', label=str(i), linewidth=2)
+    # plt.title(f'{"FID Find Freq"} - Accumulation de {Number_of_files}')
+    # plt.xlabel('Temps (s)')
+    # plt.ylabel('Tension (V)')
+    # plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
+    # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), ncol=2)
 
 
-    plt.figure(2)
-    plt.plot(freq, magnitude, label= str(i),marker='x', linestyle='-')
-    plt.title("Fourier Transform - " + "Auto Find Freq")
-    plt.xlabel("Frequency [Hz]")
-    plt.ylabel("Amplitude")
-    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), ncol=2)
-    #plt.tight_layout(rect=[0, 0, 0.85, 1])
-    plt.grid(True, which='both')
-    plt.minorticks_on()
-    plt.grid(which='minor', alpha=0.2)
-    plt.grid(which='major', alpha=0.5)
+#     plt.figure(2)
+#     plt.plot(freq, magnitude, label= str(i),marker='x', linestyle='-')
+#     plt.title("Fourier Transform - " + "Auto Find Freq")
+#     plt.xlabel("Frequency [Hz]")
+#     plt.ylabel("Amplitude")
+#     plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), ncol=2)
+#     #plt.tight_layout(rect=[0, 0, 0.85, 1])
+#     plt.grid(True, which='both')
+#     plt.minorticks_on()
+#     plt.grid(which='minor', alpha=0.2)
+#     plt.grid(which='major', alpha=0.5)
 
     larmor_Frequency_Hertz += step_freq
 
@@ -164,19 +168,23 @@ print("Acquisitions et affichage terminés."+str(file_path_all))
 plt.figure(3)
 max_tf = np.max(tf_sum)
 max_freq = freq_all[np.argmax(tf_sum)]
-print(f"\033[92m Larmor Frequency : {max_freq} Hz\033[0m")
+max_freq_amp = voltageAcc_array[np.argmax(tf_sum)]/np.min(voltageAcc_array)
+print(f"\033[92m Larmor Frequency : {max_freq} Hz {max_freq_amp}\033[0m")
 
-plt.legend(['Sum TF', f"Max: {max_tf:.2f} at {max_freq:.2f} Hz"], loc='center left', bbox_to_anchor=(1, 0.5))
-plt.plot(freq_all, tf_sum, label='Sum TF', marker='x', linestyle='-')
-plt.title("Sum Fourier Transform to find freq- " + "Auto Find Freq")
-plt.xlabel("Frequency [Hz]")
-plt.ylabel("Amplitude")
-plt.legend(loc='center left',title="Larmor Freq ="+str(max_freq))
-plt.tight_layout()
-plt.grid(True, which='both')
-plt.minorticks_on()
-plt.grid(which='minor', alpha=0.2)
-plt.grid(which='major', alpha=0.5)
+# plt.legend(['Sum TF', f"Max: {max_tf:.2f} at {max_freq:.2f} Hz"], loc='center left', bbox_to_anchor=(1, 0.5))
+# plt.plot(freq_all, tf_sum, label='Sum TF', marker='x', linestyle='-')
+# plt.title("Sum Fourier Transform to find freq- " + "Auto Find Freq")
+# plt.xlabel("Frequency [Hz]")
+# plt.ylabel("Amplitude")
+# plt.legend(loc='center left',title="Larmor Freq ="+str(max_freq))
+# plt.tight_layout()
+# plt.grid(True, which='both')
+# plt.minorticks_on()
+# plt.grid(which='minor', alpha=0.2)
+# plt.grid(which='major', alpha=0.5)
 
-plt.show(block=True)
+# plt.show(block=True)
+
+
+
 
