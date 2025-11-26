@@ -1,5 +1,5 @@
 
-import csv
+
 import matplotlib.pyplot as plt
 import numpy as np
 import datetime
@@ -67,10 +67,10 @@ for i in range(Number_of_files):
     
     #Filtrage :
     fs = 1/((time_array[10]-time_array[0])/10) 
-    lowcut = 100.0
-    highcut = 2000.0
+    lowcut = 1000000.0
+    highcut = 20000000.0
     voltageAcc_array_filtered = nmr.butter_bandpass_filter(voltageAcc_array, lowcut, highcut, fs, order=3)
-    
+    voltageAcc_array = voltageAcc_array_filtered
     ## Calcul de la TF
     dt = np.abs(time_array[0] - time_array[1])
     N = len(voltageAcc_array)
