@@ -26,7 +26,6 @@ class NMRApp:
         self.root = root
         self.root.title("Contrôle Pitaya NMR - Plotly & Save")
         self.root.geometry("950x900") # Fenêtre plus compacte car les graphiques sont externes
-        self.root.iconbitmap("python/icon.ico")
         
         self.is_running = False
         self.stop_event = threading.Event()
