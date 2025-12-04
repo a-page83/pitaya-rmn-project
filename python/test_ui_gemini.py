@@ -467,9 +467,24 @@ class NMRApp:
             freq = np.fft.fftfreq(N, dt)
             mag = np.abs(np.fft.fft(volt_cut)) * 2 / N        
 
+            # --- if Multiple files is enabled ==> SUM TF ---    
+            if self.var_chk_btn_files.get():
+                # Accumulation TF
+                if freq_all is None:
+                    freq_all = freq
+                    tf_sum = mag
+                else:
+                    g0 = interp1d(freq_all, tf_sum, bounds_error=False, fill_value=0.0)
+                    freq_all = np.union1d(freq_all, freq)
+                    g1 = interp1d(freq, mag, bounds_error=False, fill_value=0.0)
+                    tf_sum = g1(freq_all) + g0(freq_all)
+
+                if self.var_chk_btn_offset_freq.get():
+                    freq = freq + Start_freq + i*Step_freq  
+
             ## --- check if dash is enabled ---
             if self.var_chk_btn_dash.get():
-                print(f"sending file {i} on the plot with dash...")
+                self.log(f"sending file {i} on the plot with dash...")
                 fig1.add_trace(go.Scattergl( #Scattergl to use opengl
                     mode='lines', 
                     opacity=1,       
@@ -483,7 +498,7 @@ class NMRApp:
                 ),hf_x = freq[:len(freq)//2], hf_y = mag[:len(mag)//2])
                 
             else :
-                print(f"sending file {i} on the plot...")
+                self.log(f"sending file {i} on the plot...")
                 fig1.add_trace(go.Scattergl( #Scattergl to use opengl
                     x=time_cut, 
                     y=volt_cut, 
@@ -499,21 +514,6 @@ class NMRApp:
                     opacity=1, 
                     showlegend=False
                 ))
-
-            # --- if Multiple files is enabled ==> SUM TF ---    
-            if self.var_chk_btn_files.get():
-                # Accumulation TF
-                if freq_all is None:
-                    freq_all = freq
-                    tf_sum = mag
-                else:
-                    g0 = interp1d(freq_all, tf_sum, bounds_error=False, fill_value=0.0)
-                    freq_all = np.union1d(freq_all, freq)
-                    g1 = interp1d(freq, mag, bounds_error=False, fill_value=0.0)
-                    tf_sum = g1(freq_all) + g0(freq_all)
-
-                if self.var_chk_btn_offset_freq.get():
-                    freq = freq + Start_freq + i*Step_freq
 
         progress_bar.close()
 
