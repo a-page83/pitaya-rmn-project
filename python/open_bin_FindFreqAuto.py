@@ -30,9 +30,9 @@ file_path_all = filedialog.askopenfilename()
 FidNb = -1 #-1 Pour prendre toutes les FID
 
 ######### EXTRACTION OF PARAMETERS FROM FILENAME #############
-Start_freq = 0 #float(file_path_all.split('_')[3]) - 5000
+Start_freq = float(file_path_all.split('_')[3]) - 50000
 Step_freq = float(file_path_all.split('_')[2])
-Number_of_files = int(file_path_all.split('_')[1])
+Number_of_files = 200 #int(file_path_all.split('_')[1])
 
 graphstart = 0.00005 # in ms
 graphstop = 0.1 # in ms
@@ -43,8 +43,8 @@ graph_name = "FindFreq_Auto"
 file_path_all = file_path_all[:-1] # Getting the path without the last character (which is supposed to be a number) for looping over all files
 progress_bar = tqdm(total=Number_of_files-1, desc="Processing files FID", unit="file") # Initialize the progress bar
 
-fig1 = FigureResampler(go.Figure(), default_n_shown_samples=1000)
-fig2 = FigureResampler(go.Figure(), default_n_shown_samples=1000)
+fig1 = FigureResampler(go.Figure(), default_n_shown_samples=100000)
+fig2 = FigureResampler(go.Figure(), default_n_shown_samples=100000)
 
 for i in range(Number_of_files):
     progress_bar.update(1)
@@ -55,10 +55,10 @@ for i in range(Number_of_files):
 
     #Filtrage :
     fs = 1/((time_array[10]-time_array[0])/10) 
-    lowcut = 1000000.0
-    highcut = 20000000
+    lowcut = 10000
+    highcut = 90000
     voltageAcc_array_filtered = nmr.butter_bandpass_filter(voltageAcc_array, lowcut, highcut, fs, order=1)
-
+    voltageAcc_array_new = voltageAcc_array_filtered
     ## Removing the edges of the FID according to graphstart and graphstop
     dt = np.abs(time_array[0] - time_array[1])   
     #voltageAcc_array = voltageAcc_array_filtered[int(graphstart/(1000*dt)):len(voltageAcc_array)-int(graphstop/(1000*dt))]
@@ -69,13 +69,13 @@ for i in range(Number_of_files):
 
     ## Calcul de la TF
     dt = np.abs(time_array[0] - time_array[1])   
-    N = len(voltageAcc_array)
+    N = len(voltageAcc_array_new)
     freq = np.fft.fftfreq(N, dt)
-    fft_values = np.fft.fft(voltageAcc_array)
-    #freq = freq + freq_ex
+    fft_values = np.fft.fft(voltageAcc_array_new)
+    freq = freq + freq_ex
     magnitude = np.abs(fft_values) * 2 / N  # Normalize amplitude
 
-    # Summing all TFs together
+    # Summing all TFàs together
     if i==0:
         freq_all = freq
         tf_sum = magnitude
@@ -92,7 +92,7 @@ for i in range(Number_of_files):
         mode='lines', 
         opacity=1,       
         showlegend=False    # Legende désactivée car bcp de courbes
-    ),hf_x=time_array, hf_y = voltageAcc_array)
+    ),hf_x=time_array, hf_y = voltageAcc_array_new)
 
     fig2.add_trace(go.Scattergl(
         # x=freq, 
