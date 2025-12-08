@@ -75,6 +75,7 @@ class NMRApp:
         self.create_entry(param_frame, "larmor_Frequency_Hertz", "Fréquence larmor_Frequency_Hertz (Hz):", "13900000", 0, 2)
         self.create_entry(param_frame, "excitation_duration_seconds", "Durée Excitation (s):", "30e-6", 1, 2)
         self.create_entry(param_frame, "fid_time", "Temps FID (s):", "5e6", 2, 2)
+        self.create_entry(param_frame, "echo_time", "Echo Time (us):", "1e6",3,1)
 
         # --- Section Balayage ---
         open_frame = ttk.LabelFrame(main_frame, text="3. Balayage & Fichiers", padding="10")
@@ -95,9 +96,6 @@ class NMRApp:
         # --- Push buttons ---      
         btn_frame = ttk.Frame(main_frame, padding="10")
         btn_frame.pack(fill=tk.X, pady=10)
-        
-        ## - Freq offset -
-        # Variable
         self.var_chk_btn_offset_freq = tk.BooleanVar(value=False)
         # Widget 
         # We link it to the variable using 'variable='
@@ -109,38 +107,32 @@ class NMRApp:
         self.chk_btn_offset_freq.pack(fill=tk.X, pady=2)
         
         ## - Freq multiple files -
-        # Variable
         self.var_chk_btn_files = tk.BooleanVar(value=False)
-        # Widget 
-        # We link it to the variable using 'variable='
         self.chk_btn_files = ttk.Checkbutton(
             btn_frame, 
-            text="Ouvrir plusieurs fichiers ?", 
+            text="Ouverture de plusieurs fichiers", 
             variable=self.var_chk_btn_files
         )
         self.chk_btn_files.pack(fill=tk.X, pady=2)
 
         ## - Freq filter -
-     
         self.var_chk_btn_filter = tk.BooleanVar(value=False)
         self.chk_btn_filter = ttk.Checkbutton(
             btn_frame, 
-            text="Filtrer la sortie ?", 
+            text="Filtrage du signal", 
             variable=self.var_chk_btn_filter
         )
         self.chk_btn_filter.pack(fill=tk.X, pady=2)
 
-        ## - Freq dash -
- 
+        ## - dash -
         self.var_chk_btn_dash = tk.BooleanVar(value=False)
         self.chk_btn_dash = ttk.Checkbutton(
             btn_frame, 
-            text="Utiliser le moteur d'affichage ?", 
+            text="Utilisation du moteur d'affichage", 
             variable=self.var_chk_btn_dash
         )
         self.chk_btn_dash.pack(fill=tk.X, pady=2)
-
-
+      
 
         # --- Boutons to launch ---
         btn_frame = ttk.Frame(main_frame, padding="10")
@@ -159,6 +151,11 @@ class NMRApp:
         # Mode 1 = Acquisition Simple (Fréquence Fixe)
         self.btn_single = ttk.Button(btn_frame, text="▶ DÉMARRER ACQUISITION (FIXE)", 
                                      command=lambda: self.start_thread_acq(mode=1))
+        self.btn_single.pack(fill=tk.X, pady=5)
+
+        # Mode 2 = Acquisition ECHO (Fréquence Fixe)
+        self.btn_single = ttk.Button(btn_frame, text="▶ DÉMARRER ACQUISITION ECHO", 
+                                     command=lambda: self.start_thread_acq(mode=2))
         self.btn_single.pack(fill=tk.X, pady=5)
 
 
@@ -315,12 +312,14 @@ class NMRApp:
             excitation_duration_seconds = float(p['excitation_duration_seconds'])
             total_time_s = float(p['fid_time'])
             nb_files = int(p['nb_files'])
+            echo_time = float(p['echo_time'])
 
             step_freq = float(p['step_freq'])
             ##setp_p90 = 
 
             meas_time = (sample_Amount * decimation) / 125e6
             delay_rep = (total_time_s - meas_time) * 1e6
+            echo = False                            # Variable indiquant si l'echo est activé ou non
             print(delay_rep)
 
             match mode :
@@ -335,8 +334,14 @@ class NMRApp:
                     nb_files = 1      # On force à 1 cycle pour une acquisition simple
                     step_freq = 0     # Pas de changement de fréquence
                     exp_prefix = "Single_"
-                    self.log(">>> Mode: Acquisition Simple (Freq Fixe)")
-                
+                    self.log(">>> Mode: Mesure d'une accumulation de FID (Freq Fixe)")
+                case 2 :
+                    # MODE ECHO : Les paramètres sont les mêmes que case 1 : MODE SINGLE avec la variable echo à 1
+                    nb_files = 1      # On force à 1 cycle pour une accumulation simple
+                    step_freq = 0     # Pas de changement de fréquence
+                    exp_prefix = "SingleEcho_"
+                    self.log(">>> Mode: Mesure d'une accumulation d'Echo (Freq Fixe)")
+                    echo = True
             # Connexion
             
             self.log(f"Connexion à {HOST}...")
@@ -361,7 +366,10 @@ class NMRApp:
                 self.log(f"--- Step {i}/{nb_files} : {larmor_Frequency_Hertz/1e6:.3f} MHz ---")
                 
                 # Acquisition
-                nmr.run_acquisition_command(sample_Amount, decimation, acq_Amt, "mesures.bin", larmor_Frequency_Hertz, excitation_duration_seconds, delay_rep)
+                if echo == True :
+                    nmr.run_acquisition_fid_command(sample_Amount, decimation, acq_Amt, "mesures.bin", larmor_Frequency_Hertz, excitation_duration_seconds, delay_rep,echoTime=echo_time)
+                else :    
+                    nmr.run_acquisition_fid_command(sample_Amount, decimation, acq_Amt, "mesures.bin", larmor_Frequency_Hertz, excitation_duration_seconds, delay_rep) 
                 
                 # Téléchargement
                 experiment_name = f"{p['exp_name']}{i}"

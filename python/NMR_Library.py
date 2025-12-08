@@ -206,7 +206,22 @@ def create_file_wdate(nameFile):
     os.makedirs(name_local_file, exist_ok=True)
     return name_local_file
 
-def run_acquisition_command(samplesNb, dec,FidNb, FileName, larmorFrequency, excitationDuration, delayRepeat):
+def run_acquisition_echo_command(samplesNb, dec,FidNb, FileName, larmorFrequency, excitationDuration, delayRepeat, echoTime):
+    """
+    Compose and run a remote acquisition command via an existing SSH client.
+    This function expects a global `client` paramiko.SSHClient to be already connected.
+    Parameters match the remote Acquisition_axi.exe command-line arguments.
+    """
+    filePath = "mesures/" + "mesure.bin"
+    command = f"cd {REMOTE_FOLDER} && ./Acquisition_axi.exe {samplesNb} {dec} {FidNb} {filePath} {larmorFrequency} {excitationDuration} {delayRepeat} {echoTime}"
+    stdin, stdout, stderr = client.exec_command(command)
+    output = stdout.read().decode()
+    errors = stderr.read().decode()
+    # Errors are printed; output currently not used elsewhere.
+    if errors:
+        print("[ERROR SHH]\n", errors)
+
+def run_acquisition_fid_command(samplesNb, dec,FidNb, FileName, larmorFrequency, excitationDuration, delayRepeat):
     """
     Compose and run a remote acquisition command via an existing SSH client.
     This function expects a global `client` paramiko.SSHClient to be already connected.
