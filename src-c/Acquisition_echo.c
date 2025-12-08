@@ -1,6 +1,6 @@
-/////// VERSION 2 - rapide dans un seul fichier ////// 
-////// 10 en 60ms  
-
+/// 
+/// Programme avec deux salves d'excitation
+/// 
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -48,6 +48,8 @@ int main(int argc, char **argv)
     Larmor_frequency_Hertz = atof(argv[5]);
     excitation_duration_seconds = atof(argv[6]);
     delayRepeat_micro = atoi(argv[7]);
+    time_echo_microseconds = atoi(argv[8]);
+    
     printf("larmor %f, duration excitation %f\n",Larmor_frequency_Hertz, excitation_duration_seconds);
     // Vérification des valeurs numériques
     if (dsize <= 0 || dec < 0 || number_of_files <= 0) {
@@ -62,7 +64,7 @@ int main(int argc, char **argv)
     int excitation_burst_cycles_tot = Larmor_frequency_Hertz *excitation_duration_seconds;
     float oscillator_frequency = 1000; // Larmor_frequency_Hertz + 6000;
 
-    int16_t *buff1 = (int16_t *)malloc(dsize * sizeof(int16_t));
+    int16_t *buff1 = (int16_t *) malloc(dsize * sizeof(int16_t));
     uint32_t posChA;
     bool fillState = false;
     
@@ -112,8 +114,6 @@ int main(int argc, char **argv)
         fprintf(stderr, "rp_GenMode RP_CH_1 BURST failed!\n");
         return -1;
     }    
-    if(rp_GenBurstCount(RP_CH_1, excitation_burst_cycles_tot) != RP_OK){fprintf(stderr, "rp_GenBurstCount RP_CH_1 failed!\n");return -1;}
-    //valeur max pour GenBurstCount = 50 000
     if(rp_GenBurstRepetitions(RP_CH_1, 1) != RP_OK){
         fprintf(stderr, "rp_GenBurstRepetitions RP_CH_1 failed!\n");
         return -1;
@@ -145,7 +145,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "rp_GenMode RP_CH_1 BURST failed!\n");
         return -1;
     }
-    if( rp_GenOutEnable(RP_CH_2) != RP_OK){
+    if(rp_GenOutEnable(RP_CH_2) != RP_OK){
         fprintf(stderr, "rp_GenOutEnable RP_CH_1 failed!\n");
         return -1;
     }
@@ -173,6 +173,7 @@ int main(int argc, char **argv)
     int num_led = 1;
     rp_pinState_t RP_LED;
     for (i=0;i<number_of_files;i++){
+        ////// Clignottement Led et barre de chargement //////
         num_led = (int)((double)i / number_of_files * 6);
         RP_LED = RP_LED0 + (num_led);
         for (int k=0; k<=num_led-1; k++){
@@ -193,27 +194,24 @@ int main(int argc, char **argv)
         fprintf(stderr, "rp_AcqAxiSetBuffer CH_ACQ failed!\n");
         return -1;
         }
-        if (rp_AcqAxiEnable(CH_ACQ, true)) {
-            fprintf(stderr, "rp_AcqAxiEnable CH_ACQ failed!\n");
-            return -1;
-        }
-
-        ////////////DECLENCHEMENT SYNCHRONISE///////////////
-        if(rp_GenSynchronise() != RP_OK){
-            fprintf(stderr, "rp_GenSynchronise failed!\n");
-            return -1;
-        }
-        usleep(excitation_duration_microseconds);
-
+        if (rp_AcqAxiEnable(CH_ACQ, true)){fprintf(stderr, "rp_AcqAxiEnable CH_ACQ failed!\n"); return -1;}
+        
+        ////// --- DECLENCHEMENT DE LA PREMIERE SALVE --- ////// 
+        if(rp_GenBurstCount(RP_CH_1, excitation_burst_cycles_tot) != RP_OK){fprintf(stderr, "rp_GenBurstCount RP_CH_1 failed!\n");return -1;}
+        if(rp_GenTriggerOnly(RP_CH_1))fprintf(stderr, "rp_GenTriggerOnly CH_1 failed!\n"); return -1;}
+        usleep(excitation_duration_microseconds);   // attente pulse P90
+        usleep(time_echo_microseconds);             // temps entre les deux excitations excitation terminée
+        
+        ////// --- DECLENCHEMENT SYNCHRONISE --- //////
+        if(rp_GenBurstCount(RP_CH_1, excitation_burst_cycles_tot*2) != RP_OK){fprintf(stderr, "rp_GenBurstCount RP_CH_1 failed!\n");return -1;}
+        if(rp_GenSynchronise() != RP_OK){fprintf(stderr, "rp_GenSynchronise failed!\n");return -1;}
+        usleep(excitation_duration_microseconds*2);
+        usleep(time_echo_microseconds/2);       // Attente avant de déclencher l'acquisition
+        //fois deux pour le P180
+        
         //LANCEMENT, DECLENCGEMENT DE L'AQUISITION AVANT LE BURST
-        if (rp_AcqStart() != RP_OK) {
-        fprintf(stderr, "rp_AcqStart failed!\n");
-        return -1;
-        }
-        if( rp_AcqSetTriggerSrc(RP_TRIG_SRC_NOW) != RP_OK){
-            fprintf(stderr, "rp_AcqSetTriggerSrc RP_TRIG_SRC_NOW failed!\n");
-            return -1;
-        }
+        if (rp_AcqStart() != RP_OK) {fprintf(stderr, "rp_AcqStart failed!\n");return -1;}
+        if( rp_AcqSetTriggerSrc(RP_TRIG_SRC_NOW) != RP_OK){fprintf(stderr, "rp_AcqSetTriggerSrc RP_TRIG_SRC_NOW failed!\n");return -1;}
 
         // ATTENTE DU DECLENCHEMENT DU TRIGGER
         while(1){
@@ -228,10 +226,7 @@ int main(int argc, char **argv)
 
         printf ("wait to be filled\n");
         while (!fillState) {
-            if (rp_AcqAxiGetBufferFillState(CH_ACQ, &fillState) != RP_OK) {
-                fprintf(stderr, "rp_AcqAxiGetBufferFillState CH_ACQ failed!\n");
-                return -1;
-            }
+            if (rp_AcqAxiGetBufferFillState(CH_ACQ, &fillState) != RP_OK) {fprintf(stderr, "rp_AcqAxiGetBufferFillState CH_ACQ failed!\n");return -1;}
         }
         
         if(rp_AcqStop() != RP_OK){

@@ -16,6 +16,7 @@ endif
 PRGS =
 		Acquisition_axi\
 		Simulation\
+		Acquisition_echo\
 
 OBJS := $(patsubst %,%.o,$(PRGS))
 SRC := $(patsubst %,%.c,$(PRGS))
