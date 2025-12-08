@@ -448,6 +448,10 @@ class NMRApp:
         progress_bar = tqdm(total=Number_of_files, desc="Processing Acquisitions to find Frequency", unit="file")
         for i in range(Number_of_files):
             progress_bar.update(1)
+            elapsed = progress_bar.format_dict["elapsed"]
+            remains = progress_bar.format_dict["remaining"]
+            self.log(f"Chargement du fichier {i}/{Number_of_files}. Temps restant : {remains}")
+
             filepath = filepath_all+str(i)
             time_array, voltage_array_matrix, voltageAcc_array = nmr.open_file_bin(filepath, nombre_de_FID=-1)
             
@@ -521,7 +525,7 @@ class NMRApp:
                     opacity=1, 
                     showlegend=False
                 ))
-
+        
         progress_bar.close()
 
         if self.var_chk_btn_dash.get():
