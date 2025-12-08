@@ -75,7 +75,7 @@ class NMRApp:
         self.create_entry(param_frame, "larmor_Frequency_Hertz", "Fréquence larmor_Frequency_Hertz (Hz):", "13900000", 0, 2)
         self.create_entry(param_frame, "excitation_duration_seconds", "Durée Excitation (s):", "30e-6", 1, 2)
         self.create_entry(param_frame, "fid_time", "Temps FID (s):", "5e6", 2, 2)
-        self.create_entry(param_frame, "echo_time", "Echo Time (us):", "1e6",3,1)
+        self.create_entry(param_frame, "echo_time", "Echo Time (us):", "1e6",3,0)
 
         # --- Section Balayage ---
         open_frame = ttk.LabelFrame(main_frame, text="3. Balayage & Fichiers", padding="10")
@@ -367,7 +367,7 @@ class NMRApp:
                 
                 # Acquisition
                 if echo == True :
-                    nmr.run_acquisition_fid_command(sample_Amount, decimation, acq_Amt, "mesures.bin", larmor_Frequency_Hertz, excitation_duration_seconds, delay_rep,echoTime=echo_time)
+                    nmr.run_acquisition_echo_command(sample_Amount, decimation, acq_Amt, "mesures.bin", larmor_Frequency_Hertz, excitation_duration_seconds, delay_rep,echoTime=echo_time)
                 else :    
                     nmr.run_acquisition_fid_command(sample_Amount, decimation, acq_Amt, "mesures.bin", larmor_Frequency_Hertz, excitation_duration_seconds, delay_rep) 
                 
@@ -448,9 +448,7 @@ class NMRApp:
         progress_bar = tqdm(total=Number_of_files, desc="Processing Acquisitions to find Frequency", unit="file")
         for i in range(Number_of_files):
             progress_bar.update(1)
-            elapsed = progress_bar.format_dict["elapsed"]
-            remains = progress_bar.format_dict["remaining"]
-            self.log(f"Chargement du fichier {i}/{Number_of_files}. Temps restant : {remains}")
+            self.log(f"Chargement du fichier {i}/{Number_of_files}")
 
             filepath = filepath_all+str(i)
             time_array, voltage_array_matrix, voltageAcc_array = nmr.open_file_bin(filepath, nombre_de_FID=-1)
