@@ -25,7 +25,7 @@ class NMRApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Contrôle Pitaya NMR - Plotly & Save")
-        self.root.geometry("950x900") # Fenêtre plus compacte car les graphiques sont externes
+        self.root.geometry("600x1000") # Fenêtre plus compacte car les graphiques sont externes
         
         self.is_running = False
         self.stop_event = threading.Event()
@@ -64,11 +64,10 @@ class NMRApp:
         self.create_entry(conn_frame, "user", "Utilisateur:", "root", 1)
         self.create_entry(conn_frame, "pass", "Mot de passe:", "root", 2)
 
-        # --- Section Paramètres ---
+        # --- Section Paramètres Généraux ---
         param_frame = ttk.LabelFrame(main_frame, text="2. Paramètres RMN", padding="10")
         param_frame.pack(fill=tk.X, pady=5)
 
-        # Grille de paramètres
         self.create_entry(param_frame, "sample_Amount", "Sample Amount:", "131072", 0, 0)
         self.create_entry(param_frame, "decimation", "Decimation:", "2", 1, 0)
         self.create_entry(param_frame, "acq_amt", "Nombre d'Accumulations:", "100", 2, 0)
@@ -77,25 +76,29 @@ class NMRApp:
         self.create_entry(param_frame, "fid_time", "Temps FID (s):", "5e6", 2, 2)
         self.create_entry(param_frame, "echo_time", "Echo Time (us):", "1e6",3,0)
 
-        # --- Section Balayage ---
-        open_frame = ttk.LabelFrame(main_frame, text="3. Balayage & Fichiers", padding="10")
-        open_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(5, 0))
+        # --- FRAME FILTRE ET BALAYAGE --- 
+        sweep_filter_frame = ttk.Frame(main_frame, padding="10")
+        sweep_filter_frame.pack(fill=tk.X,expand=True)
+
+        # --- Section Balayage Subframe ---
+        sweep_frame = ttk.LabelFrame(sweep_filter_frame, text="3. Balayage & Fichiers", padding="5")
+        sweep_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True,padx=2.5)
         
+        self.create_entry(sweep_frame, "nb_files", "Nb Fichiers (Steps):", "1", 0)
+        self.create_entry(sweep_frame, "step_freq", "Pas de Fréquence (Hz):", "3000", 1)
+        self.create_entry(sweep_frame, "exp_name", "Nom Expérience:", "Stepfreq", 2)
+        self.create_entry(sweep_frame, "graph_start", "Début Graphe (ms):", "0", 3)
         
-        self.create_entry(open_frame, "nb_files", "Nb Fichiers (Steps):", "1", 0)
-        self.create_entry(open_frame, "step_freq", "Pas de Fréquence (Hz):", "3000", 1)
-        self.create_entry(open_frame, "exp_name", "Nom Expérience:", "Stepfreq", 2)
-        self.create_entry(open_frame, "graph_start", "Début Graphe (ms):", "0", 3)
-        
-        filter_frame = ttk.LabelFrame(main_frame, text="4. Réglages du filtre", padding="10")
-        filter_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=(0, 5))
+        # --- Section filtre Subframe --- 
+        filter_frame = ttk.LabelFrame(sweep_filter_frame, text="4. Réglages du filtre", padding="5")
+        filter_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True,padx=2.5)
         
         self.create_entry(filter_frame, "high_freq", "Fréquence haute (Hz)", "1000", 0)
         self.create_entry(filter_frame, "low_freq", "Fréquence basse (Hz):", "3000", 1)
         self.create_entry(filter_frame, "order", "Ordre du fitre", "1", 2)
         
         # --- Push buttons ---      
-        btn_frame = ttk.Frame(main_frame, padding="10")
+        btn_frame = ttk.LabelFrame(main_frame, text="Configuration de l'ouverture", padding="10")
         btn_frame.pack(fill=tk.X, pady=10)
         self.var_chk_btn_offset_freq = tk.BooleanVar(value=False)
         # Widget 
@@ -105,7 +108,7 @@ class NMRApp:
             text="Ouvrir avec décalage", 
             variable=self.var_chk_btn_offset_freq
         )
-        self.chk_btn_offset_freq.pack(fill=tk.X, pady=2)
+        self.chk_btn_offset_freq.grid(column=1,row=1,sticky="ew", padx=5, pady=2)
         
         ## - Freq multiple files -
         self.var_chk_btn_files = tk.BooleanVar(value=False)
@@ -114,7 +117,7 @@ class NMRApp:
             text="Ouverture de plusieurs fichiers", 
             variable=self.var_chk_btn_files
         )
-        self.chk_btn_files.pack(fill=tk.X, pady=2)
+        self.chk_btn_files.grid(column=1,row=2,sticky="ew", padx=5, pady=2)
 
         ## - Freq filter -
         self.var_chk_btn_filter = tk.BooleanVar(value=False)
@@ -123,7 +126,7 @@ class NMRApp:
             text="Filtrage du signal", 
             variable=self.var_chk_btn_filter
         )
-        self.chk_btn_filter.pack(fill=tk.X, pady=2)
+        self.chk_btn_filter.grid(column=5,row=1,sticky="ew", padx=5, pady=2)
 
         ## - dash -
         self.var_chk_btn_dash = tk.BooleanVar(value=False)
@@ -132,11 +135,11 @@ class NMRApp:
             text="Utilisation du moteur d'affichage", 
             variable=self.var_chk_btn_dash
         )
-        self.chk_btn_dash.pack(fill=tk.X, pady=2)
-      
+        self.chk_btn_dash.grid(column=5,row=2,sticky="ew", padx=5, pady=2)
+
 
         # --- Boutons to launch ---
-        btn_frame = ttk.Frame(main_frame, padding="10")
+        btn_frame = ttk.LabelFrame(main_frame, text="Boutons de lancement", padding="10")
         btn_frame.pack(fill=tk.X, pady=10)
 
         # Calcul des paramètres
