@@ -1,6 +1,6 @@
 /// 
 /// Programme avec deux salves d'excitation
-/// 
+/// Commande de test : ./Acquisition_echo.exe 1000 32 1 mesures/mesure.bin 13500000.0 2e-05 99744.0 1000.0
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -23,10 +23,11 @@ int main(int argc, char **argv)
     float Larmor_frequency_Hertz;
     int delayRepeat_micro; //en usecondes
     int number_of_files;
+    float time_echo_microseconds;
     char nomFichier[256];
 
     float excitation_amplitude_Volts = 0.19;
-    float oscillator_amplitude_Volts = 0; //0.8;
+    float oscillator_amplitude_Volts = 0.8;
     int gainValue = 0;
 
     // Pin Acq Settings
@@ -62,7 +63,8 @@ int main(int argc, char **argv)
 
 
     int excitation_burst_cycles_tot = Larmor_frequency_Hertz *excitation_duration_seconds;
-    float oscillator_frequency = 1000; // Larmor_frequency_Hertz + 6000;
+    float oscillator_frequency = Larmor_frequency_Hertz + 50000;
+    printf("Local oscillator frequency set at %f\n", oscillator_frequency);
 
     int16_t *buff1 = (int16_t *) malloc(dsize * sizeof(int16_t));
     uint32_t posChA;
@@ -198,7 +200,7 @@ int main(int argc, char **argv)
         
         ////// --- DECLENCHEMENT DE LA PREMIERE SALVE --- ////// 
         if(rp_GenBurstCount(RP_CH_1, excitation_burst_cycles_tot) != RP_OK){fprintf(stderr, "rp_GenBurstCount RP_CH_1 failed!\n");return -1;}
-        if(rp_GenTriggerOnly(RP_CH_1))fprintf(stderr, "rp_GenTriggerOnly CH_1 failed!\n"); return -1;}
+        if(rp_GenTriggerOnly(RP_CH_1)){fprintf(stderr, "rp_GenTriggerOnly CH_1 failed!\n"); return -1;}
         usleep(excitation_duration_microseconds);   // attente pulse P90
         usleep(time_echo_microseconds);             // temps entre les deux excitations excitation terminée
         
@@ -222,8 +224,6 @@ int main(int argc, char **argv)
             }
         }
         
-
-
         printf ("wait to be filled\n");
         while (!fillState) {
             if (rp_AcqAxiGetBufferFillState(CH_ACQ, &fillState) != RP_OK) {fprintf(stderr, "rp_AcqAxiGetBufferFillState CH_ACQ failed!\n");return -1;}
@@ -260,6 +260,8 @@ int main(int argc, char **argv)
 
     /* Releasing resources */
     rp_AcqAxiEnable(CH_ACQ, false);
+    if(rp_GenOutEnable(RP_CH_1) != RP_OK){fprintf(stderr, "rp_GenOutEnable RP_CH_1 failed!\n");return -1;}
+    if(rp_GenOutEnable(RP_CH_2) != RP_OK){fprintf(stderr, "rp_GenOutEnable RP_CH_2 failed!\n");return -1;}
     rp_Release();
     free(buff1);
     return 0;

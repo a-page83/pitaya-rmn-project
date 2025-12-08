@@ -81,6 +81,7 @@ class NMRApp:
         open_frame = ttk.LabelFrame(main_frame, text="3. Balayage & Fichiers", padding="10")
         open_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(5, 0))
         
+        
         self.create_entry(open_frame, "nb_files", "Nb Fichiers (Steps):", "1", 0)
         self.create_entry(open_frame, "step_freq", "Pas de Fréquence (Hz):", "3000", 1)
         self.create_entry(open_frame, "exp_name", "Nom Expérience:", "Stepfreq", 2)

@@ -7,24 +7,15 @@ INCLUDE += -I/opt/redpitaya/include/api250-12
 LDLIBS += -lrp-gpio -lrp-i2c
 LDLIBS += -lrp-hw -lm -lstdc++ -lpthread -li2c -lsocketcan
 
-# Si l'argument DEBUG est passé
-ifeq ($(DEBUG), 1)
-    CFLAGS += -g
-endif
-
 # List of compiled object files (not yet linked to executable)
-PRGS =
-		Acquisition_axi\
+PRGS =	Acquisition_axi\
 		Simulation\
 		Acquisition_echo\
 
 OBJS := $(patsubst %,%.o,$(PRGS))
 SRC := $(patsubst %,%.c,$(PRGS))
 
-
 all: $(PRGS)
-
-
 
 $(PRGS): %: %.c functions.o
 	$(CC) $< $(CFLAGS) $(LDFLAGS) $(LDLIBS) -o $@.exe functions.o
@@ -43,3 +34,8 @@ clean_all: clean
 
 debug:
 	$(MAKE) DEBUG=1
+
+# Si l'argument DEBUG est passé
+ifeq ($(DEBUG), 1)
+    CFLAGS += -g
+endif

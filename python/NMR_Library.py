@@ -213,7 +213,8 @@ def run_acquisition_echo_command(samplesNb, dec,FidNb, FileName, larmorFrequency
     Parameters match the remote Acquisition_axi.exe command-line arguments.
     """
     filePath = "mesures/" + "mesure.bin"
-    command = f"cd {REMOTE_FOLDER} && ./Acquisition_axi.exe {samplesNb} {dec} {FidNb} {filePath} {larmorFrequency} {excitationDuration} {delayRepeat} {echoTime}"
+    command = f"cd {REMOTE_FOLDER} && ./Acquisition_echo.exe {samplesNb} {dec} {FidNb} {filePath} {larmorFrequency} {excitationDuration} {delayRepeat} {echoTime}"
+    print(command)
     stdin, stdout, stderr = client.exec_command(command)
     output = stdout.read().decode()
     errors = stderr.read().decode()
