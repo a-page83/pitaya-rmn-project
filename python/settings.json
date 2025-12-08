@@ -1,0 +1,18 @@
+{
+    "ip": "169.254.215.235",
+    "user": "root",
+    "pass": "root",
+    "sample_Amount": "20000",
+    "decimation": "32",
+    "acq_amt": "10000",
+    "larmor_Frequency_Hertz": "13.5e6",
+    "excitation_duration_seconds": "20e-6",
+    "fid_time": "0.1",
+    "nb_files": "200",
+    "step_freq": "5000",
+    "exp_name": "Stepfreq",
+    "graph_start": "0",
+    "high_freq": "15e6",
+    "low_freq": "12e6",
+    "order": "3"
+}
