@@ -26,7 +26,7 @@ file_path_all = filedialog.askopenfilename()
 FidNb = -1 #-1 Pour prendre toutes les FID
 
 ######### EXTRACTION OF PARAMETERS FROM FILENAME #############
-Number_of_files = int(file_path_all.split('_')[1])
+Number_of_files = 80 #int(file_path_all.split('_')[1])
 excitation_initial = float(file_path_all.split('_')[2])
 step_excitation = float(file_path_all.split('_')[3])
 
@@ -36,6 +36,8 @@ graph_name = "FindP90_Auto"
 
 file_path_all = file_path_all[:-1]
 
+max_magnitude = 0
+freq_at_max_magnitude = 0
 
 progress_bar = tqdm(total=Number_of_files-1, desc="Processing files", unit="file")
 for i in range(Number_of_files):
@@ -53,24 +55,13 @@ for i in range(Number_of_files):
     plt.ylabel('Tension (V)')
     plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
     plt.legend()
-progress_bar.close()
 
-# Initialisation of the loop to find the maximum
-max_magnitude = 0
-freq_at_max_magnitude = 0
-progress_bar = tqdm(total=Number_of_files-1, desc="Processing files", unit="file")
-for i in range(Number_of_files):
-    progress_bar.update(1)
-
-    file_path = file_path_all + str(i)
-    time_array, voltage_array_matrix, voltageAcc_array = nmr.open_file_bin(file_path, nombre_de_FID=FidNb)
-    
-    #Filtrage :
-    fs = 1/((time_array[10]-time_array[0])/10) 
-    lowcut = 1000000.0
-    highcut = 20000000.0
-    voltageAcc_array_filtered = nmr.butter_bandpass_filter(voltageAcc_array, lowcut, highcut, fs, order=3)
-    voltageAcc_array = voltageAcc_array_filtered
+    # --- Filtrage :
+    # fs = 1/((time_array[10]-time_array[0])/10) 
+    # lowcut = 1000000.0
+    # highcut = 20000000.0
+    # voltageAcc_array_filtered = nmr.butter_bandpass_filter(voltageAcc_array, lowcut, highcut, fs, order=3)
+    # voltageAcc_array = voltageAcc_array_filtered
     ## Calcul de la TF
     dt = np.abs(time_array[0] - time_array[1])
     N = len(voltageAcc_array)
