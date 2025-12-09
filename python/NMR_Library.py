@@ -213,6 +213,10 @@ def run_acquisition_echo_command(samplesNb, dec,FidNb, FileName, larmorFrequency
     Compose and run a remote acquisition command via an existing SSH client.
     This function expects a global `client` paramiko.SSHClient to be already connected.
     Parameters match the remote Acquisition_axi.exe command-line arguments.
+    larmorfrequency in Hz
+    excitation duration in seconds
+    delayRepat in micro_seconds
+    echoTime in micro_seconds
     """
     filePath = "mesures/" + "mesure.bin"
     command = f"cd {REMOTE_FOLDER} && ./Acquisition_echo.exe {samplesNb} {dec} {FidNb} {filePath} {larmorFrequency} {excitationDuration} {delayRepeat} {echoTime}"

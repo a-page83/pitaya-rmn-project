@@ -75,7 +75,7 @@ class NMRApp:
         self.create_entry(param_frame, "larmor_Frequency_Hertz", "Fréquence larmor_Frequency_Hertz (Hz):", "13900000", 0, 2)
         self.create_entry(param_frame, "excitation_duration_seconds", "Durée Excitation (s):", "30e-6", 1, 2)
         self.create_entry(param_frame, "fid_time", "Temps FID (s):", "5e6", 2, 2)
-        self.create_entry(param_frame, "echo_time", "Echo Time (us):", "1e6",3,0)
+        self.create_entry(param_frame, "echo_time", "Echo Time (s):", "1",3,0)
 
         # --- FRAME FILTRE ET BALAYAGE --- 
         sweep_filter_frame = ttk.Frame(main_frame, padding="10")
@@ -303,6 +303,8 @@ class NMRApp:
             self.log(f"Sample Amount must be a multiple of 2","ERROR")
         if total_time_fid_mes > total_FID_Time_s :
             self.log(f"total measured time > total time of one accumulation","ERROR")
+        if total_FID_Time_s > 1e6 :
+            self.log(f"total_time_fid in seconds ?","ERROR")
 
     def run_acquisition(self,mode):
         try:
@@ -317,15 +319,11 @@ class NMRApp:
             excitation_duration_seconds = float(p['excitation_duration_seconds'])
             total_time_s = float(p['fid_time'])
             nb_files = int(p['nb_files'])
-            echo_time = float(p['echo_time'])
-
+            echo_time_us = float(p['echo_time'])*1e6 # Conversion de secondes à us
             step_freq = float(p['step_freq'])
             ##setp_p90 = 
 
-            meas_time = (sample_Amount * decimation) / 125e6
-            delay_rep = (total_time_s - meas_time) * 1e6
             echo = False                            # Variable indiquant si l'echo est activé ou non
-            print(delay_rep)
 
             match mode :
                 case 0 :
@@ -347,6 +345,15 @@ class NMRApp:
                     exp_prefix = "SingleEcho_"
                     self.log(">>> Mode: Mesure d'une accumulation d'Echo (Freq Fixe)")
                     echo = True
+            
+            if echo == True :
+                meas_time = (sample_Amount * decimation) / 125e6 + echo_time_us*3e-6 + excitation_duration_seconds*3
+            else : 
+                meas_time = (sample_Amount * decimation) / 125e6 + excitation_duration_seconds
+
+            delay_rep = (total_time_s - meas_time) * 1e6
+            print(delay_rep)
+
             # Connexion
             
             self.log(f"Connexion à {HOST}...")
@@ -372,7 +379,7 @@ class NMRApp:
                 
                 # Acquisition
                 if echo == True :
-                    nmr.run_acquisition_echo_command(sample_Amount, decimation, acq_Amt, "mesures.bin", larmor_Frequency_Hertz, excitation_duration_seconds, delay_rep,echoTime=echo_time)
+                    nmr.run_acquisition_echo_command(sample_Amount, decimation, acq_Amt, "mesures.bin", larmor_Frequency_Hertz, excitation_duration_seconds, delay_rep,echoTime=echo_time_us)
                 else :    
                     nmr.run_acquisition_fid_command(sample_Amount, decimation, acq_Amt, "mesures.bin", larmor_Frequency_Hertz, excitation_duration_seconds, delay_rep) 
                 
