@@ -182,9 +182,9 @@ class NMRApp:
         self.btn_single = ttk.Button(btn_echo_frame, text="▶ DÉMARRER ECHO SWEEP FREQ", 
                                      command=lambda: self.start_thread_acq(mode=3))
         self.btn_single.pack(fill=tk.X, pady=5)
-        self.btn_single = ttk.Button(btn_echo_frame, text="▶ DÉMARRER FID SWEEP P90", 
+        self.btn_sweep = ttk.Button(btn_echo_frame, text="▶ DÉMARRER FID SWEEP P90", 
                                      command=lambda: self.start_thread_acq(mode=5))
-        self.btn_single.pack(fill=tk.X, pady=5)
+        self.btn_sweep.pack(fill=tk.X, pady=5)
 
         # --- Logs ---
         log_frame = ttk.LabelFrame(main_frame, text="Logs", padding="5")
