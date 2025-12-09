@@ -358,6 +358,9 @@ class NMRApp:
                     exp_prefix = "SingleEcho_"
                     self.log(">>> Mode: Mesure d'une accumulation d'Echo (Freq Fixe)")
                     echo = True
+                    if total_time_s <= echo_time_us*1e-6 :
+                        self.log("ERREUR : Echo time trop long","ERROR")
+                        return
                 case 3 : 
                     # MODE ECHO SWEEP : Les paramètres sont les mêmes que MODE SWEEP avec la variable echo à 1
                     # On utilise les champs "Nb Fichiers" et "Step"
@@ -365,8 +368,9 @@ class NMRApp:
                     step_freq = float(p['step_freq'])
                     exp_prefix = "SweepFreq_"
                     self.log(">>> Mode: Frequency Sweep with echo")
-                    if total_time_s <= echo_time_us*1e6 :
-                        self.log("ERREUR : Echo time trop court","ERROR")
+                    echo = True
+                    if total_time_s <= echo_time_us*1e-6 :
+                        self.log("ERREUR : Echo time trop long","ERROR")
                         return
             
             if echo == True :
