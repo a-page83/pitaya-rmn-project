@@ -41,6 +41,7 @@ rp-api/
 #    de les ignorer également.
 build/
 bin/
+__pycache__/
 *.out
 mesures/
 *.bin
