@@ -198,13 +198,15 @@ def open_file_bin(pathFile_bin,nombre_de_FID):
 
 def create_file_wdate(nameFile):
     """
-    Create a local measurements folder with a timestamped name under python/mesures/.
+    Create a local measurements folder with a timestamped name under pitaya-rmn-project/python/mesures/.
     Returns the created folder path.
     """
     now = datetime.datetime.now()
-    name_local_file = f"python/mesures/{nameFile}_{now.strftime('%Y%m%d_%H%M%S')}"
-    os.makedirs(name_local_file, exist_ok=True)
-    return name_local_file
+    projectDir = os.path.dirname(os.path.abspath(__file__))
+    path_local_file = f"python/mesures/{nameFile}_{now.strftime('%Y%m%d_%H%M%S')}"
+    abs_path_local_file = os.path.join(projectDir, path_local_file)
+    os.makedirs(abs_path_local_file, exist_ok=True)
+    return abs_path_local_file
 
 def run_acquisition_echo_command(samplesNb, dec,FidNb, FileName, larmorFrequency, excitationDuration, delayRepeat, echoTime):
     """

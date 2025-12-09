@@ -19,13 +19,14 @@ try:
 except ImportError:
     print("ATTENTION: NMR_Library non trouvé.")
 
-CONFIG_FILE = "python/settings.json"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CONFIG_FILE = os.path.join(BASE_DIR, "python/settings.json")
 
 class NMRApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Contrôle Pitaya NMR - Plotly & Save")
-        self.root.geometry("600x1000") # Fenêtre plus compacte car les graphiques sont externes
+        self.root.geometry("680x1000") # Fenêtre plus compacte car les graphiques sont externes
         
         self.is_running = False
         self.stop_event = threading.Event()
