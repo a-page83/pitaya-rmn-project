@@ -527,8 +527,8 @@ class NMRApp:
                     g1 = interp1d(freq, mag, bounds_error=False, fill_value=0.0)
                     tf_sum = g1(freq_all) + g0(freq_all)
 
-                # if self.var_chk_btn_offset_freq.get():
-                #     freq = freq + Start_freq + i*Step_freq  
+                if self.var_chk_btn_offset_freq.get():
+                    freq = freq + Start_freq + i*Step_freq  
 
             ## --- check if dash is enabled ---
             if self.var_chk_btn_dash.get():
