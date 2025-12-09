@@ -20,13 +20,13 @@ except ImportError:
     print("ATTENTION: NMR_Library non trouvé.")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CONFIG_FILE = os.path.join(BASE_DIR, "python/settings.json")
+CONFIG_FILE = os.path.join(BASE_DIR, "settings.json")
 
 class NMRApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Contrôle Pitaya NMR - Plotly & Save")
-        self.root.geometry("680x1000") # Fenêtre plus compacte car les graphiques sont externes
+        self.root.geometry("800x1000") # Fenêtre plus compacte car les graphiques sont externes
         
         self.is_running = False
         self.stop_event = threading.Event()
@@ -148,29 +148,43 @@ class NMRApp:
                                      command=lambda: self.print_parameters())
         self.btn_single.pack(fill=tk.X, pady=5)
 
-        # Mode 0 = Frequency Sweep
-        self.btn_sweep = ttk.Button(btn_frame, text="▶ DÉMARRER FREQ SWEEP", 
-                                    command=lambda: self.start_thread_acq(mode=0))
-        self.btn_sweep.pack(fill=tk.X, pady=5)
-
-        # Mode 1 = Acquisition Simple (Fréquence Fixe)
-        self.btn_single = ttk.Button(btn_frame, text="▶ DÉMARRER ACQUISITION (FIXE)", 
-                                     command=lambda: self.start_thread_acq(mode=1))
-        self.btn_single.pack(fill=tk.X, pady=5)
-
-        # Mode 2 = Acquisition ECHO (Fréquence Fixe)
-        self.btn_single = ttk.Button(btn_frame, text="▶ DÉMARRER ACQUISITION ECHO", 
-                                     command=lambda: self.start_thread_acq(mode=2))
-        self.btn_single.pack(fill=tk.X, pady=5)
-
-
         self.btn_plot = ttk.Button(btn_frame, text="📁 OUVRIR GRAPHIQUES", 
                                    command=lambda: self.browse_open_file())
-        self.btn_plot.pack(fill=tk.X, pady=5)
+        self.btn_plot.pack(side=tk.BOTTOM,fill=tk.X, pady=5)
         
         self.btn_stop = ttk.Button(btn_frame, text="⏹ ARRÊTER", 
                                    command=self.stop_acquisition, state=tk.DISABLED)
-        self.btn_stop.pack(fill=tk.X, pady=5)
+        self.btn_stop.pack(side=tk.BOTTOM,fill=tk.X, pady=5)
+
+        btn_fid_frame = ttk.LabelFrame(btn_frame,text =" Boutons pour lancer avec fid")
+        btn_fid_frame.pack(side=tk.LEFT,fill=tk.BOTH,expand=True,padx=5)
+        
+        # Mode 1 = Acquisition Simple (Fréquence Fixe)
+        self.btn_single = ttk.Button(btn_fid_frame, text="▶ DÉMARRER FID SIMPLE", 
+                                     command=lambda: self.start_thread_acq(mode=1))
+        self.btn_single.pack(fill=tk.X, pady=5)
+        # Mode 0 = Frequency Sweep
+        self.btn_sweep = ttk.Button(btn_fid_frame, text="▶ DÉMARRER FID SWEEP FREQ", 
+                                    command=lambda: self.start_thread_acq(mode=0))
+        self.btn_sweep.pack(fill=tk.X, pady=5)
+        
+        self.btn_sweep = ttk.Button(btn_fid_frame, text="▶ DÉMARRER FID SWEEP P90", 
+                                    command=lambda: self.start_thread_acq(mode=4))
+        self.btn_sweep.pack(fill=tk.X, pady=5)
+
+        btn_echo_frame = ttk.LabelFrame(btn_frame,text =" Boutons pour lancer avec echo")
+        btn_echo_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True,padx=5)
+        # Mode 2 = Acquisition ECHO (Fréquence Fixe)
+        self.btn_single = ttk.Button(btn_echo_frame, text="▶ DÉMARRER ECHO SIMPLE", 
+                                     command=lambda: self.start_thread_acq(mode=2))
+        self.btn_single.pack(fill=tk.X, pady=5)
+
+        self.btn_single = ttk.Button(btn_echo_frame, text="▶ DÉMARRER ECHO SWEEP FREQ", 
+                                     command=lambda: self.start_thread_acq(mode=3))
+        self.btn_single.pack(fill=tk.X, pady=5)
+        self.btn_single = ttk.Button(btn_echo_frame, text="▶ DÉMARRER FID SWEEP P90", 
+                                     command=lambda: self.start_thread_acq(mode=5))
+        self.btn_single.pack(fill=tk.X, pady=5)
 
         # --- Logs ---
         log_frame = ttk.LabelFrame(main_frame, text="Logs", padding="5")
@@ -292,10 +306,9 @@ class NMRApp:
         total_time_fid_mes = (sample_Amount * decimation)/125e6
         nb_cycles = larmor_Frequency_Hertz*excitation_duration_seconds
         temps_total_step_secondes = (total_FID_Time_s)*acq_Amt+1
-
+        self.log(f"Sweep set from {larmor_Frequency_Hertz}Hz to {larmor_Frequency_Hertz + step_freq*nb_files}")
         self.log(f"total time for one step ({acq_Amt} accumulations): {str(datetime.timedelta(seconds=temps_total_step_secondes))}")
         self.log(f"total sweep time :{datetime.timedelta(seconds=temps_total_step_secondes*nb_files+3)} ")
-        self.log(f"Sweep set from {larmor_Frequency_Hertz}Hz to {larmor_Frequency_Hertz + step_freq*nb_files}")
 
         if nb_cycles < 0 or nb_cycles > 50000:
             self.log(f"Bad Number of cycles for the burst : {nb_cycles} check pulse time or frequency !!!","ERROR")  # Prints in red
@@ -345,6 +358,16 @@ class NMRApp:
                     exp_prefix = "SingleEcho_"
                     self.log(">>> Mode: Mesure d'une accumulation d'Echo (Freq Fixe)")
                     echo = True
+                case 3 : 
+                    # MODE ECHO SWEEP : Les paramètres sont les mêmes que MODE SWEEP avec la variable echo à 1
+                    # On utilise les champs "Nb Fichiers" et "Step"
+                    nb_files = int(p['nb_files'])
+                    step_freq = float(p['step_freq'])
+                    exp_prefix = "SweepFreq_"
+                    self.log(">>> Mode: Frequency Sweep with echo")
+                    if total_time_s <= echo_time_us*1e6 :
+                        self.log("ERREUR : Echo time trop court","ERROR")
+                        return
             
             if echo == True :
                 meas_time = (sample_Amount * decimation) / 125e6 + echo_time_us*3e-6 + excitation_duration_seconds*3

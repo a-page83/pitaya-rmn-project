@@ -203,7 +203,7 @@ def create_file_wdate(nameFile):
     """
     now = datetime.datetime.now()
     projectDir = os.path.dirname(os.path.abspath(__file__))
-    path_local_file = f"python/mesures/{nameFile}_{now.strftime('%Y%m%d_%H%M%S')}"
+    path_local_file = f"mesures/{nameFile}_{now.strftime('%Y%m%d_%H%M%S')}"
     abs_path_local_file = os.path.join(projectDir, path_local_file)
     os.makedirs(abs_path_local_file, exist_ok=True)
     return abs_path_local_file
