@@ -115,7 +115,7 @@ class NMRApp:
         self.var_chk_btn_files = tk.BooleanVar(value=False)
         self.chk_btn_files = ttk.Checkbutton(
             btn_frame, 
-            text="Ouverture de plusieurs fichiers", 
+            text="Ouvrir plusieurs fichiers", 
             variable=self.var_chk_btn_files
         )
         self.chk_btn_files.grid(column=1,row=2,sticky="ew", padx=5, pady=2)
@@ -124,7 +124,7 @@ class NMRApp:
         self.var_chk_btn_filter = tk.BooleanVar(value=False)
         self.chk_btn_filter = ttk.Checkbutton(
             btn_frame, 
-            text="Filtrage du signal", 
+            text="Ouvrir en filtrant le signal", 
             variable=self.var_chk_btn_filter
         )
         self.chk_btn_filter.grid(column=5,row=1,sticky="ew", padx=5, pady=2)
@@ -133,7 +133,7 @@ class NMRApp:
         self.var_chk_btn_dash = tk.BooleanVar(value=False)
         self.chk_btn_dash = ttk.Checkbutton(
             btn_frame, 
-            text="Utilisation du moteur d'affichage", 
+            text="Ouvrir en utilisant le moteur d'affichage", 
             variable=self.var_chk_btn_dash
         )
         self.chk_btn_dash.grid(column=5,row=2,sticky="ew", padx=5, pady=2)
