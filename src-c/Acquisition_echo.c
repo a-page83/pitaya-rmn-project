@@ -63,7 +63,7 @@ int main(int argc, char **argv)
 
 
     int excitation_burst_cycles_tot = Larmor_frequency_Hertz *excitation_duration_seconds;
-    float oscillator_frequency = Larmor_frequency_Hertz + 50000;
+    float oscillator_frequency = Larmor_frequency_Hertz - 50000;
     printf("Local oscillator frequency set at %f\n", oscillator_frequency);
 
     int16_t *buff1 = (int16_t *) malloc(dsize * sizeof(int16_t));
@@ -260,8 +260,8 @@ int main(int argc, char **argv)
 
     /* Releasing resources */
     rp_AcqAxiEnable(CH_ACQ, false);
-    if(rp_GenOutEnable(RP_CH_1) != RP_OK){fprintf(stderr, "rp_GenOutEnable RP_CH_1 failed!\n");return -1;}
-    if(rp_GenOutEnable(RP_CH_2) != RP_OK){fprintf(stderr, "rp_GenOutEnable RP_CH_2 failed!\n");return -1;}
+    if(rp_GenOutDisable(RP_CH_1) != RP_OK){fprintf(stderr, "rp_GenOutEnable RP_CH_1 failed!\n");return -1;}
+    if(rp_GenOutDisable(RP_CH_2) != RP_OK){fprintf(stderr, "rp_GenOutEnable RP_CH_2 failed!\n");return -1;}
     rp_Release();
     free(buff1);
     return 0;

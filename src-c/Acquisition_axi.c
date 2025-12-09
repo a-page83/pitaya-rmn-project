@@ -267,8 +267,8 @@ int main(int argc, char **argv)
 
     /* Releasing resources */
     rp_AcqAxiEnable(CH_ACQ, false);
-    if(rp_GenOutEnable(RP_CH_1) != RP_OK){fprintf(stderr, "rp_GenOutEnable RP_CH_1 failed!\n");return -1;}
-    if(rp_GenOutEnable(RP_CH_2) != RP_OK){fprintf(stderr, "rp_GenOutEnable RP_CH_2 failed!\n");return -1;}
+    if(rp_GenOutDisable(RP_CH_1) != RP_OK){fprintf(stderr, "rp_GenOutEnable RP_CH_1 failed!\n");return -1;}
+    if(rp_GenOutDisable(RP_CH_2) != RP_OK){fprintf(stderr, "rp_GenOutEnable RP_CH_2 failed!\n");return -1;}
     rp_Release();
     free(buff1);
     return 0;
