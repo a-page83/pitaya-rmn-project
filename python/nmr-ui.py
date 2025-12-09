@@ -70,7 +70,7 @@ class NMRApp:
 
         self.create_entry(param_frame, "sample_Amount", "Sample Amount:", "131072", 0, 0)
         self.create_entry(param_frame, "decimation", "Decimation:", "2", 1, 0)
-        self.create_entry(param_frame, "acq_amt", "Nombre d'Accumulations:", "100", 2, 0)
+        self.create_entry(param_frame, "acq_amt", "Nombre de FID mesurés (sur une accumulation):", "100", 2, 0)
         self.create_entry(param_frame, "larmor_Frequency_Hertz", "Fréquence larmor_Frequency_Hertz (Hz):", "13900000", 0, 2)
         self.create_entry(param_frame, "excitation_duration_seconds", "Durée Excitation (s):", "30e-6", 1, 2)
         self.create_entry(param_frame, "fid_time", "Temps FID (s):", "5e6", 2, 2)
@@ -492,8 +492,8 @@ class NMRApp:
                     g1 = interp1d(freq, mag, bounds_error=False, fill_value=0.0)
                     tf_sum = g1(freq_all) + g0(freq_all)
 
-                if self.var_chk_btn_offset_freq.get():
-                    freq = freq + Start_freq + i*Step_freq  
+                # if self.var_chk_btn_offset_freq.get():
+                #     freq = freq + Start_freq + i*Step_freq  
 
             ## --- check if dash is enabled ---
             if self.var_chk_btn_dash.get():
