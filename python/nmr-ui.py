@@ -337,7 +337,7 @@ class NMRApp:
             nb_files = int(p['nb_files'])
             echo_time_us = float(p['echo_time'])*1e6 # Conversion de secondes à us
             step_freq = 0
-            setp_p90 = 0 #On met step freq et P90 à 0 par défaut, seront modifiés en fonction du mode
+            step_p90 = 0 #On met step freq et P90 à 0 par défaut, seront modifiés en fonction du mode
 
             echo = False                            # Variable indiquant si l'echo est activé ou non
 
