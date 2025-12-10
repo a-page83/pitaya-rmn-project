@@ -12,6 +12,7 @@ from plotly_resampler import FigureResampler
 from scipy.interpolate import interp1d
 from tkinter import filedialog
 from tqdm import tqdm
+import random
 
 # Importation de votre librairie
 try:
@@ -436,10 +437,10 @@ class NMRApp:
             
             #progress_bar.close()
 
-            self.log("Acquisition terminée.")
+            self.log("-- Acquisition terminée --","BLUE")
             self.data_store = {"file_path" : file_path}
-            print("Chemin renvoyé par l'acquisition"+str(file_path))
-            self.open_file(filepath_all=file_path[:-1]) # Remove the index
+            print("Chemin renvoyé par l'acquisition : \n \t"+str(file_path))
+            ##self.open_file(filepath_all=file_path[:-1]) # Remove the index
             
         except Exception as e:
             self.log(f"ERREUR: {e}")
@@ -599,8 +600,10 @@ class NMRApp:
 
 
         if self.var_chk_btn_dash.get():
-            self.start_thread_dash(fig1,port = 8080)
-            self.start_thread_dash(fig2,port = 8081)
+            random_port_1 = random.randint(8050, 9000)
+            random_port_2 = random.randint(8050, 9000)
+            self.start_thread_dash(fig1,port = random_port_1)
+            self.start_thread_dash(fig2,port = random_port_2)
 
             self.log("check the console to open the plot","WARNING")
         else :
