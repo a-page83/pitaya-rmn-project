@@ -306,9 +306,10 @@ class NMRApp:
         total_time_fid_mes = (sample_Amount * decimation)/125e6
         nb_cycles = larmor_Frequency_Hertz*excitation_duration_seconds
         temps_total_step_secondes = (total_FID_Time_s)*acq_Amt+1
-        self.log(f"Sweep set from {larmor_Frequency_Hertz}Hz to {larmor_Frequency_Hertz + step_freq*nb_files}")
+        self.log(f"Length of the acquisition window : {total_time_fid_mes}s")
         self.log(f"total time for one step ({acq_Amt} accumulations): {str(datetime.timedelta(seconds=temps_total_step_secondes))}")
         self.log(f"total sweep time :{datetime.timedelta(seconds=temps_total_step_secondes*nb_files+3)} ")
+        self.log(f"Sweep set from {larmor_Frequency_Hertz}Hz to {larmor_Frequency_Hertz + step_freq*nb_files}")
 
         if nb_cycles < 0 or nb_cycles > 50000:
             self.log(f"Bad Number of cycles for the burst : {nb_cycles} check pulse time or frequency !!!","ERROR")  # Prints in red
@@ -456,18 +457,20 @@ class NMRApp:
     def open_file(self,filepath_all):
         
         p = {k: v.get() for k, v in self.inputs.items()}
+        
+        graph_start = float(p['graph_start'])
+        Start_freq = float(filepath_all.split('_')[3]) - 50000
+        print(f"Start freq = {Start_freq}")
+        Step_freq = float(filepath_all.split('_')[2])
+        Number_of_files = int(filepath_all.split('_')[1])
+        
 
         # Initialisation variables accumulation
         freq_all = None
         tf_sum = None
 
-        graph_start = float(p['graph_start'])
-
         # --- multiple file enabled ---
         if self.var_chk_btn_files.get(): ## IF TICKBOX MULTIPLE FILES IS ON
-            Start_freq = 0 #float(filepath.split('_')[3]) - 5000
-            Step_freq = float(filepath_all.split('_')[2])
-            Number_of_files = int(filepath_all.split('_')[1])
             if (Number_of_files >= 100) and (not self.var_chk_btn_dash.get()):
                 self.log("ENABLE DASH","ERROR")
                 return
@@ -527,8 +530,8 @@ class NMRApp:
                     g1 = interp1d(freq, mag, bounds_error=False, fill_value=0.0)
                     tf_sum = g1(freq_all) + g0(freq_all)
 
-                if self.var_chk_btn_offset_freq.get():
-                    freq = freq + Start_freq + i*Step_freq  
+            if self.var_chk_btn_offset_freq.get():
+                freq = freq + Start_freq + i*Step_freq  
 
             ## --- check if dash is enabled ---
             if self.var_chk_btn_dash.get():
