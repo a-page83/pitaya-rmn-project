@@ -419,9 +419,9 @@ class NMRApp:
                 
                 # Acquisition
                 if echo == True :
-                    nmr.run_acquisition_echo_command(sample_Amount, decimation, acq_Amt, "mesures.bin", larmor_Frequency_Hertz, excitation_duration_seconds, delay_rep,echoTime=echo_time_us)
+                    nmr.run_acquisition_echo_command(sample_Amount, decimation, acq_Amt, "mesures.bin", larmor_Frequency_Hertz, excitation_duration_seconds, delay_rep,echoTime=echo_time_us,verbose=True)
                 else :    
-                    nmr.run_acquisition_fid_command(sample_Amount, decimation, acq_Amt, "mesures.bin", larmor_Frequency_Hertz, excitation_duration_seconds, delay_rep) 
+                    nmr.run_acquisition_fid_command(sample_Amount, decimation, acq_Amt, "mesures.bin", larmor_Frequency_Hertz, excitation_duration_seconds, delay_rep, verbose=True) 
                 
                 # Téléchargement
                 experiment_name = f"{p['exp_name']}{i}"
