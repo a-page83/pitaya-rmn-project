@@ -131,7 +131,16 @@ class NMRApp:
             variable=self.var_chk_btn_dash
         )
         self.chk_btn_dash.grid(column=5,row=2,sticky="ew", padx=5, pady=2)
-
+        
+        ## - dash -
+        self.var_chk_btn_sumtf = tk.BooleanVar(value=False)
+        self.chk_btn_sumtf = ttk.Checkbutton(
+            btn_frame, 
+            text="Ouvrir le graphe sommant les TF", 
+            variable=self.var_chk_btn_sumtf
+        )
+        self.chk_btn_sumtf.grid(column=7,row=1,sticky="ew", padx=5, pady=2)
+ 
         # --- Boutons to launch ---
         btn_frame = ttk.LabelFrame(main_frame, text="Boutons de lancement", padding="10")
         btn_frame.pack(fill=tk.X, pady=10)
@@ -466,7 +475,10 @@ class NMRApp:
         tf_sum = None
 
         graph_start = float(p['graph_start'])
-
+        if not(self.var_chk_btn_files.get()) and self.var_chk_btn_sumtf.get():
+            self.log("SUM TF option requires multiple files to be enabled","ERROR")
+            return
+        
         # --- multiple file enabled ---
         if self.var_chk_btn_files.get(): ## IF TICKBOX MULTIPLE FILES IS ON
             Start_freq = 0 #float(filepath.split('_')[3]) - 5000
@@ -487,6 +499,8 @@ class NMRApp:
         else :
             fig1 = go.Figure()
             fig2 = go.Figure()
+
+        fig3 = go.Figure() # For sum TF
 
         progress_bar = tqdm(total=Number_of_files, desc="Processing Acquisitions to find Frequency", unit="file")
         for i in range(Number_of_files):
@@ -520,7 +534,7 @@ class NMRApp:
             mag = np.abs(np.fft.fft(volt_cut)) * 2 / N        
 
             # --- if Multiple files is enabled ==> SUM TF ---    
-            if self.var_chk_btn_files.get():
+            if self.var_chk_btn_files.get() and self.var_chk_btn_sumtf.get():
                 # Accumulation TF
                 if freq_all is None:
                     freq_all = freq
@@ -568,6 +582,18 @@ class NMRApp:
                 ))
         
         progress_bar.close()
+
+      ## -- plot of sum TF if multiple files is enabled --
+        if self.var_chk_btn_sumtf.get() and self.var_chk_btn_files.get(): 
+            fig3.add_trace(go.Scattergl( #Scattergl to use opengl
+                x=freq_all, 
+                y=tf_sum, 
+                mode='lines', 
+                name='TF_SUM',       
+                line=dict(color='blue', width=2)
+            ))
+            fig3.show(config=config)
+
 
         if self.var_chk_btn_dash.get():
             self.start_thread_dash(fig1,port = 8080)
