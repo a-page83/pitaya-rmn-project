@@ -80,20 +80,17 @@ class NMRApp:
         # --- FRAME FILTRE ET BALAYAGE --- 
         sweep_filter_frame = ttk.Frame(main_frame, padding="10")
         sweep_filter_frame.pack(fill=tk.X,expand=True)
-
         # --- Section Balayage Subframe ---
         sweep_frame = ttk.LabelFrame(sweep_filter_frame, text="3. Balayage & Fichiers", padding="5")
         sweep_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True,padx=2.5)
-        
         self.create_entry(sweep_frame, "nb_files", "Nb Fichiers (Steps):", "1", 0)
         self.create_entry(sweep_frame, "step_freq", "Pas de Fréquence (Hz):", "3000", 1)
-        self.create_entry(sweep_frame, "exp_name", "Nom Expérience:", "Stepfreq", 2)
-        self.create_entry(sweep_frame, "graph_start", "Début Graphe (ms):", "0", 3)
-        
+        self.create_entry(sweep_frame, "step_p90", "Pas de P90 (s):", "0", 2)
+        self.create_entry(sweep_frame, "exp_name", "Nom Expérience:", "Stepfreq", 3)
+        self.create_entry(sweep_frame, "graph_start", "Début Graphe (ms):", "0", 4)
         # --- Section filtre Subframe --- 
         filter_frame = ttk.LabelFrame(sweep_filter_frame, text="4. Réglages du filtre", padding="5")
-        filter_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True,padx=2.5)
-        
+        filter_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True,padx=2.5) 
         self.create_entry(filter_frame, "high_freq", "Fréquence haute (Hz)", "1000", 0)
         self.create_entry(filter_frame, "low_freq", "Fréquence basse (Hz):", "3000", 1)
         self.create_entry(filter_frame, "order", "Ordre du fitre", "1", 2)
@@ -110,35 +107,40 @@ class NMRApp:
             variable=self.var_chk_btn_offset_freq
         )
         self.chk_btn_offset_freq.grid(column=1,row=1,sticky="ew", padx=5, pady=2)
-        
         ## - Freq multiple files -
         self.var_chk_btn_files = tk.BooleanVar(value=False)
         self.chk_btn_files = ttk.Checkbutton(
             btn_frame, 
-            text="Ouverture de plusieurs fichiers", 
+            text="Ouvrir plusieurs fichiers", 
             variable=self.var_chk_btn_files
         )
         self.chk_btn_files.grid(column=1,row=2,sticky="ew", padx=5, pady=2)
-
         ## - Freq filter -
         self.var_chk_btn_filter = tk.BooleanVar(value=False)
         self.chk_btn_filter = ttk.Checkbutton(
             btn_frame, 
-            text="Filtrage du signal", 
+            text="Ouvrir en filtrant le signal", 
             variable=self.var_chk_btn_filter
         )
         self.chk_btn_filter.grid(column=5,row=1,sticky="ew", padx=5, pady=2)
-
         ## - dash -
         self.var_chk_btn_dash = tk.BooleanVar(value=False)
         self.chk_btn_dash = ttk.Checkbutton(
             btn_frame, 
-            text="Utilisation du moteur d'affichage", 
+            text="Ouvrir en utilisant le moteur d'affichage", 
             variable=self.var_chk_btn_dash
         )
         self.chk_btn_dash.grid(column=5,row=2,sticky="ew", padx=5, pady=2)
-
-
+        
+        ## - dash -
+        self.var_chk_btn_sumtf = tk.BooleanVar(value=False)
+        self.chk_btn_sumtf = ttk.Checkbutton(
+            btn_frame, 
+            text="Ouvrir le graphe sommant les TF", 
+            variable=self.var_chk_btn_sumtf
+        )
+        self.chk_btn_sumtf.grid(column=7,row=1,sticky="ew", padx=5, pady=2)
+ 
         # --- Boutons to launch ---
         btn_frame = ttk.LabelFrame(main_frame, text="Boutons de lancement", padding="10")
         btn_frame.pack(fill=tk.X, pady=10)
@@ -161,30 +163,30 @@ class NMRApp:
         
         # Mode 1 = Acquisition Simple (Fréquence Fixe)
         self.btn_single = ttk.Button(btn_fid_frame, text="▶ DÉMARRER FID SIMPLE", 
-                                     command=lambda: self.start_thread_acq(mode=1))
+                                     command=lambda: self.start_thread_acq(mode=0)) #Single FID
         self.btn_single.pack(fill=tk.X, pady=5)
         # Mode 0 = Frequency Sweep
         self.btn_sweep = ttk.Button(btn_fid_frame, text="▶ DÉMARRER FID SWEEP FREQ", 
-                                    command=lambda: self.start_thread_acq(mode=0))
+                                    command=lambda: self.start_thread_acq(mode=1)) #Sweep FID
         self.btn_sweep.pack(fill=tk.X, pady=5)
         
         self.btn_sweep = ttk.Button(btn_fid_frame, text="▶ DÉMARRER FID SWEEP P90", 
-                                    command=lambda: self.start_thread_acq(mode=4))
+                                    command=lambda: self.start_thread_acq(mode=2)) #Sweep P90 FID
         self.btn_sweep.pack(fill=tk.X, pady=5)
 
         btn_echo_frame = ttk.LabelFrame(btn_frame,text =" Boutons pour lancer avec echo")
         btn_echo_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True,padx=5)
         # Mode 2 = Acquisition ECHO (Fréquence Fixe)
         self.btn_single = ttk.Button(btn_echo_frame, text="▶ DÉMARRER ECHO SIMPLE", 
-                                     command=lambda: self.start_thread_acq(mode=2))
+                                     command=lambda: self.start_thread_acq(mode=3)) #Single Echo
         self.btn_single.pack(fill=tk.X, pady=5)
 
         self.btn_single = ttk.Button(btn_echo_frame, text="▶ DÉMARRER ECHO SWEEP FREQ", 
-                                     command=lambda: self.start_thread_acq(mode=3))
+                                     command=lambda: self.start_thread_acq(mode=4)) #Sweep Freq Echo
         self.btn_single.pack(fill=tk.X, pady=5)
-        self.btn_single = ttk.Button(btn_echo_frame, text="▶ DÉMARRER FID SWEEP P90", 
-                                     command=lambda: self.start_thread_acq(mode=5))
-        self.btn_single.pack(fill=tk.X, pady=5)
+        self.btn_sweep = ttk.Button(btn_echo_frame, text="▶ DÉMARRER FID SWEEP P90", 
+                                     command=lambda: self.start_thread_acq(mode=5)) #Sweep p90 echo
+        self.btn_sweep.pack(fill=tk.X, pady=5)
 
         # --- Logs ---
         log_frame = ttk.LabelFrame(main_frame, text="Logs", padding="5")
@@ -334,46 +336,56 @@ class NMRApp:
             total_time_s = float(p['fid_time'])
             nb_files = int(p['nb_files'])
             echo_time_us = float(p['echo_time'])*1e6 # Conversion de secondes à us
-            step_freq = float(p['step_freq'])
-            ##setp_p90 = 
+            step_freq = 0
+            setp_p90 = 0 #On met step freq et P90 à 0 par défaut, seront modifiés en fonction du mode
 
             echo = False                            # Variable indiquant si l'echo est activé ou non
 
             match mode :
                 case 0 :
+                    # MODE SINGLE : On force 1 seul fichier (ou accumulation sans changer freq)
+                    nb_files = 1      # On force à 1 cycle pour une acquisition simple
+                    exp_prefix = "Single_"
+                    self.log(">>> Mode: Mesure d'une accumulation de FID (Freq Fixe)")
+                case 1 :
                     # MODE SWEEP : On utilise les champs "Nb Fichiers" et "Step"
                     nb_files = int(p['nb_files'])
                     step_freq = float(p['step_freq'])
                     exp_prefix = "SweepFreq_"
-                    self.log(">>> Mode: Frequency Sweep")
-                case 1 :
-                    # MODE SINGLE : On force 1 seul fichier (ou accumulation sans changer freq)
-                    nb_files = 1      # On force à 1 cycle pour une acquisition simple
-                    step_freq = 0     # Pas de changement de fréquence
-                    exp_prefix = "Single_"
-                    self.log(">>> Mode: Mesure d'une accumulation de FID (Freq Fixe)")
+                    self.log(">>> Mode: Frequency Sweep FID")
                 case 2 :
+                    # MODE SWEEP P90 : On utilise les champs "Nb Fichiers" et "Stepp90"
+                    nb_files = int(p['nb_files'])
+                    step_p90 = float(p['step_freq'])
+                    exp_prefix = "SweepP90_"
+                    self.log(">>> Mode: P90 Sweep FID")
+                case 3 :
                     # MODE ECHO : Les paramètres sont les mêmes que case 1 : MODE SINGLE avec la variable echo à 1
                     nb_files = 1      # On force à 1 cycle pour une accumulation simple
-                    step_freq = 0     # Pas de changement de fréquence
                     exp_prefix = "SingleEcho_"
                     self.log(">>> Mode: Mesure d'une accumulation d'Echo (Freq Fixe)")
                     echo = True
                     if total_time_s <= echo_time_us*1e-6 :
                         self.log("ERREUR : Echo time trop long","ERROR")
                         return
-                case 3 : 
+                case 4 :
                     # MODE ECHO SWEEP : Les paramètres sont les mêmes que MODE SWEEP avec la variable echo à 1
                     # On utilise les champs "Nb Fichiers" et "Step"
                     nb_files = int(p['nb_files'])
                     step_freq = float(p['step_freq'])
-                    exp_prefix = "SweepFreq_"
+                    exp_prefix = "SweepFreqEcho_"
                     self.log(">>> Mode: Frequency Sweep with echo")
                     echo = True
                     if total_time_s <= echo_time_us*1e-6 :
                         self.log("ERREUR : Echo time trop long","ERROR")
                         return
-            
+                case 5 :
+                    # MODE SWEEP P90 ECHO : On utilise les champs "Nb Fichiers" et "Stepp90"
+                    nb_files = int(p['nb_files'])
+                    step_p90 = float(p['step_freq'])
+                    exp_prefix = "SweepP90_"
+                    echo = True
+                    self.log(">>> Mode: Frequency Sweep with echo")
             if echo == True :
                 meas_time = (sample_Amount * decimation) / 125e6 + echo_time_us*3e-6 + excitation_duration_seconds*3
             else : 
@@ -403,7 +415,7 @@ class NMRApp:
                 #progress_bar.update(1)
                 if self.stop_event.is_set(): break
                 
-                self.log(f"--- Step {i}/{nb_files} : {larmor_Frequency_Hertz/1e6:.3f} MHz ---")
+                self.log(f"--- Step {i}/{nb_files} : {larmor_Frequency_Hertz/1e6:.3f} MHz {excitation_duration_seconds/1e-6:.3f}µs ---")
                 
                 # Acquisition
                 if echo == True :
@@ -418,8 +430,9 @@ class NMRApp:
                 
                 # Traitement
                 file_path = os.path.join(nameLocalFolder, experiment_name)
-                
+             
                 larmor_Frequency_Hertz += step_freq
+                excitation_duration_seconds += step_p90
             
             #progress_bar.close()
 
@@ -468,7 +481,10 @@ class NMRApp:
         # Initialisation variables accumulation
         freq_all = None
         tf_sum = None
-
+        if not(self.var_chk_btn_files.get()) and self.var_chk_btn_sumtf.get():
+            self.log("SUM TF option requires multiple files to be enabled","ERROR")
+            return
+        
         # --- multiple file enabled ---
         if self.var_chk_btn_files.get(): ## IF TICKBOX MULTIPLE FILES IS ON
             if (Number_of_files >= 100) and (not self.var_chk_btn_dash.get()):
@@ -486,6 +502,8 @@ class NMRApp:
         else :
             fig1 = go.Figure()
             fig2 = go.Figure()
+
+        fig3 = go.Figure() # For sum TF
 
         progress_bar = tqdm(total=Number_of_files, desc="Processing Acquisitions to find Frequency", unit="file")
         for i in range(Number_of_files):
@@ -519,7 +537,7 @@ class NMRApp:
             mag = np.abs(np.fft.fft(volt_cut)) * 2 / N        
 
             # --- if Multiple files is enabled ==> SUM TF ---    
-            if self.var_chk_btn_files.get():
+            if self.var_chk_btn_files.get() and self.var_chk_btn_sumtf.get():
                 # Accumulation TF
                 if freq_all is None:
                     freq_all = freq
@@ -567,6 +585,18 @@ class NMRApp:
                 ))
         
         progress_bar.close()
+
+      ## -- plot of sum TF if multiple files is enabled --
+        if self.var_chk_btn_sumtf.get() and self.var_chk_btn_files.get(): 
+            fig3.add_trace(go.Scattergl( #Scattergl to use opengl
+                x=freq_all, 
+                y=tf_sum, 
+                mode='lines', 
+                name='TF_SUM',       
+                line=dict(color='blue', width=2)
+            ))
+            fig3.show(config=config)
+
 
         if self.var_chk_btn_dash.get():
             self.start_thread_dash(fig1,port = 8080)
