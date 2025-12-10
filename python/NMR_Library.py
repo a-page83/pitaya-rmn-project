@@ -208,7 +208,7 @@ def create_file_wdate(nameFile):
     os.makedirs(abs_path_local_file, exist_ok=True)
     return abs_path_local_file
 
-def run_acquisition_echo_command(samplesNb, dec,FidNb, FileName, larmorFrequency, excitationDuration, delayRepeat, echoTime):
+def run_acquisition_echo_command(samplesNb, dec,FidNb, FileName, larmorFrequency, excitationDuration, delayRepeat, echoTime, verbose=False):
     """
     Compose and run a remote acquisition command via an existing SSH client.
     This function expects a global `client` paramiko.SSHClient to be already connected.
@@ -225,10 +225,14 @@ def run_acquisition_echo_command(samplesNb, dec,FidNb, FileName, larmorFrequency
     output = stdout.read().decode()
     errors = stderr.read().decode()
     # Errors are printed; output currently not used elsewhere.
+    if verbose == True : 
+        for line in iter(stdout.readline, ""):
+            print(line, end="")   # affiche chaque ligne dès qu'elle arrive
+    
     if errors:
         print("[ERROR SHH]\n", errors)
 
-def run_acquisition_fid_command(samplesNb, dec,FidNb, FileName, larmorFrequency, excitationDuration, delayRepeat):
+def run_acquisition_fid_command(samplesNb, dec,FidNb, FileName, larmorFrequency, excitationDuration, delayRepeat, verbose=False):
     """
     Compose and run a remote acquisition command via an existing SSH client.
     This function expects a global `client` paramiko.SSHClient to be already connected.
@@ -239,7 +243,9 @@ def run_acquisition_fid_command(samplesNb, dec,FidNb, FileName, larmorFrequency,
     stdin, stdout, stderr = client.exec_command(command)
     output = stdout.read().decode()
     errors = stderr.read().decode()
-    # Errors are printed; output currently not used elsewhere.
+    if verbose == True : 
+        for line in iter(stdout.readline, ""):
+            print(line, end="")   # affiche chaque ligne dès qu'elle arrive
     if errors:
         print("[ERROR SHH]\n", errors)
 
