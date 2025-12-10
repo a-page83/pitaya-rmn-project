@@ -46,3 +46,4 @@ __pycache__/
 mesures/
 *.bin
 *.html
+python/__pycache__/NMR_Library.cpython-313.pyc
