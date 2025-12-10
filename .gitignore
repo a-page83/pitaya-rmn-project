@@ -4,6 +4,7 @@
 #    Utiliser un slash à la fin pour s'assurer qu'on ignore bien un dossier
 #    et non un fichier du même nom.
 rp-api/
+.github/
 
 # 2. Ignorer les fichiers par extension
 #    L'astérisque (*) est un caractère joker qui signifie "n'importe quel nom de fichier".
@@ -46,6 +47,4 @@ __pycache__/
 mesures/
 *.bin
 *.html
-python/__pycache__/NMR_Library.cpython-313.pyc
-python/__pycache__/NMR_Library.cpython-313.pyc
-python/__pycache__/NMR_Library.cpython-313.pyc
+
