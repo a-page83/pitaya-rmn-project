@@ -595,7 +595,7 @@ class NMRApp:
                 name='TF_SUM',       
                 line=dict(color='blue', width=2)
             ))
-            fig3.show(config=config)
+            fig3.show()
 
 
         if self.var_chk_btn_dash.get():

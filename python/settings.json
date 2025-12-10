@@ -11,6 +11,7 @@
     "echo_time": "1",
     "nb_files": "5",
     "step_freq": "10000",
+    "step_p90": "0",
     "exp_name": "Stepfreq",
     "graph_start": "0",
     "high_freq": "15e6",

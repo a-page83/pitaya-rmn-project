@@ -47,3 +47,4 @@ mesures/
 *.bin
 *.html
 
+python/settings.json
