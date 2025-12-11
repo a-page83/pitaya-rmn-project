@@ -251,10 +251,15 @@ def download_file_sftp(nameLocalFile,nameRemoteFolder,nameLocalFolder):
     """
     Download a remote file using an existing global SFTP client `sftp`.
     Parameters:
-      nameLocalFile    : filename on the local side
-      nameRemoteFolder : remote subfolder under REMOTE_PATH
-      nameLocalFolder  : local directory to save into
+        nameLocalFile    : filename on the local side
+        nameRemoteFolder : remote subfolder under REMOTE_PATH
+        nameLocalFolder  : local directory to save into
+    To work the paramiko SFTP client `sftp` must be already connected.
+    to do so, use the all the connexion lines with the nmr. before
+    example : nmr.sftp = paramiko.SFTPClient.from_transport(transport)
+
     """
+
         
     remote_path = REMOTE_PATH + nameRemoteFolder+'/' + "mesure.bin"
     local_path = os.path.join(nameLocalFolder, nameLocalFile)
