@@ -13,6 +13,7 @@ from scipy.interpolate import interp1d
 from tkinter import filedialog
 from tqdm import tqdm
 import random
+import webbrowser
 
 # Importation de votre librairie
 try:
@@ -272,6 +273,7 @@ class NMRApp:
         t = threading.Thread(target=self.dash_launcher, args=(figure,port))
         t.daemon = True
         t.start()
+        webbrowser.open(f'http://127.0.1:{port}/', new=0, autoraise=True)
 
     def dash_launcher(self,figure,port):
         config = {'scrollZoom': True}
