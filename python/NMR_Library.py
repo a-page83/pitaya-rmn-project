@@ -226,8 +226,7 @@ def run_acquisition_echo_command(samplesNb, dec,FidNb, FileName, larmorFrequency
     errors = stderr.read().decode()
     # Errors are printed; output currently not used elsewhere.
     if verbose == True : 
-        for line in iter(stdout.readline, ""):
-            print(line, end="")   # affiche chaque ligne dès qu'elle arrive
+        print(output)
     
     if errors:
         print("[ERROR SHH]\n", errors)
@@ -244,8 +243,7 @@ def run_acquisition_fid_command(samplesNb, dec,FidNb, FileName, larmorFrequency,
     output = stdout.read().decode()
     errors = stderr.read().decode()
     if verbose == True : 
-        for line in iter(stdout.readline, ""):
-            print(line, end="")   # affiche chaque ligne dès qu'elle arrive
+        print(output)
     if errors:
         print("[ERROR SHH]\n", errors)
 
