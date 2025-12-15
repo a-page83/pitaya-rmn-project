@@ -459,14 +459,15 @@ class NMRApp:
 
     def browse_open_file(self):
         # Ouvre l'explorateur
-        self.log(f"Ouverture et affichage...")
+        self.log("Ouverture et affichage...")
         filepath = filedialog.askopenfilename(
             title="Sélectionner un fichier",
         )
         
         # Si l'utilisateur n'a pas annulé
         if filepath:
-            filepath = filepath[:-1]
+            if self.var_chk_btn_files.get():
+                filepath = filepath[:-1]
             self.open_file(filepath_all=filepath)
             return
 
@@ -513,7 +514,10 @@ class NMRApp:
             progress_bar.update(1)
             self.log(f"Chargement du fichier {i}/{Number_of_files}")
 
-            filepath = filepath_all+str(i)
+            if self.var_chk_btn_files.get():
+                filepath = filepath_all+str(i)
+            else :
+                filepath = filepath_all
             time_array, voltage_array_matrix, voltageAcc_array = nmr.open_file_bin(filepath, nombre_de_FID=-1)
             
             dt = np.abs(time_array[0] - time_array[1])
