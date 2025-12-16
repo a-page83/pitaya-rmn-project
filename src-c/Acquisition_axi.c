@@ -61,6 +61,12 @@ int main(int argc, char **argv)
 
 
     int excitation_burst_cycles_tot = Larmor_frequency_Hertz *excitation_duration_seconds;
+    int burst_repeat= 1;
+    if (excitation_burst_cycles_tot >= 50000) { // on regarde burst_cycles_tot *2 pour que p180 depasse ps les 50000 cycles
+        burst_repeat = 2;
+        excitation_burst_cycles_tot = burst_cycles_tot/2;
+    }
+ 
     float oscillator_frequency = Larmor_frequency_Hertz + 50000;
     printf("Local oscillator frequency set at %f", oscillator_frequency);
 
@@ -116,7 +122,7 @@ int main(int argc, char **argv)
     }    
     if(rp_GenBurstCount(RP_CH_1, excitation_burst_cycles_tot) != RP_OK){fprintf(stderr, "rp_GenBurstCount RP_CH_1 failed!\n");return -1;}
     //valeur max pour GenBurstCount = 50 000
-    if(rp_GenBurstRepetitions(RP_CH_1, 1) != RP_OK){
+    if(rp_GenBurstRepetitions(RP_CH_1, burst_repeat) != RP_OK){
         fprintf(stderr, "rp_GenBurstRepetitions RP_CH_1 failed!\n");
         return -1;
     }//Répété 1 fois pour que le burst dure qq usecondes   
