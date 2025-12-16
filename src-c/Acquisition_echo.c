@@ -208,7 +208,8 @@ int main(int argc, char **argv)
         if(rp_GenBurstCount(RP_CH_1, excitation_burst_cycles_tot*2) != RP_OK){fprintf(stderr, "rp_GenBurstCount RP_CH_1 failed!\n");return -1;}
         if(rp_GenSynchronise() != RP_OK){fprintf(stderr, "rp_GenSynchronise failed!\n");return -1;}
         usleep(excitation_duration_microseconds*2);
-        usleep(time_echo_microseconds/2);       // Attente avant de déclencher l'acquisition
+
+        //usleep(time_echo_microseconds/2);       // Attente avant de déclencher l'acquisition
         //fois deux pour le P180
         
         //LANCEMENT, DECLENCGEMENT DE L'AQUISITION AVANT LE BURST
