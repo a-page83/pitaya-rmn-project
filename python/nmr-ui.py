@@ -7,7 +7,6 @@ import datetime
 import os
 import json
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 from plotly_resampler import FigureResampler
 from scipy.interpolate import interp1d
 from tkinter import filedialog
@@ -23,11 +22,15 @@ except ImportError:
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_FILE = os.path.join(BASE_DIR, "settings.json")
-
-class NMRApp:
-    def __init__(self, root):
+ 
+""" Classe l'application NMR qui gère l'interface Tkinter et fonctionnalités Plotly c'est un composant qui viens se greffer à la fenetre Tkinter
+        Elle va être crée avec le paramètre root de tkinker puis lancée par tkinker en commencant par __init__
+        Le setup gère les boutons et l'interface, les boutons appellent les fonctions ou sont des variables qui peuvent être appellés dans les fonctions.
+"""
+class NMRApp: 
+    def __init__(self, root): ## Initialisation de l'interface qui va appeler la fonction setup avec tous les widgets 
         self.root = root
-        self.root.title("Contrôle Pitaya NMR - Plotly & Save")
+        self.root.title("Contrôle Red Pitaya pour RMN")
         self.root.geometry("800x1000") # Fenêtre plus compacte car les graphiques sont externes
         
         self.is_running = False
@@ -48,10 +51,10 @@ class NMRApp:
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
     def setup_ui(self):
-        # Style
+        # """ Setup de l'interface utilisateur avec tous les widgets tkinker, cette fonction est appelée dans __init__ et crée les champs, boutons, labels, etc.
+        #     C'est dans cette fonction qu'il est possible de rajouter, boutons et paramètres et de régler l'apparence de l'UI"""
         style = ttk.Style()
         style.configure("Bold.TLabel", font=("Segoe UI", 9, "bold"))
-
 
         # --- Panneau Principal ---
         main_frame = ttk.Frame(self.root, padding="15")
@@ -61,11 +64,15 @@ class NMRApp:
         conn_frame = ttk.LabelFrame(main_frame, text="1. Connexion SSH", padding="10")
         conn_frame.pack(fill=tk.X, pady=5)
 
-        self.inputs = {} # Dictionnaire pour stocker les widgets Entry
+        self.inputs = {}
 
-        self.create_entry(conn_frame, "ip", "IP Pitaya:", "169.254.215.235", 0)
-        self.create_entry(conn_frame, "user", "Utilisateur:", "root", 1)
-        self.create_entry(conn_frame, "pass", "Mot de passe:", "root", 2)
+        #  Dictionnaire pour stocker les widgets Entry 
+        #  toutes les entrés sont stockés dans le dictionnaire, 
+        #  pour récupérer les valeurs plus tard il suffit de faire self.inputs['key'].get()
+
+        self.create_entry(conn_frame, "ip", "IP Pitaya:", "169.254.215.235", 0, 1)
+        self.create_entry(conn_frame, "user", "Utilisateur:", "root", 0 , 2)
+        self.create_entry(conn_frame, "pass", "Mot de passe:", "root", 0, 3)
 
         # --- Section Paramètres Généraux ---
         param_frame = ttk.LabelFrame(main_frame, text="2. Paramètres RMN", padding="10")
@@ -144,6 +151,8 @@ class NMRApp:
         self.chk_btn_sumtf.grid(column=7,row=1,sticky="ew", padx=5, pady=2)
  
         # --- Boutons to launch ---
+        # Permet de d'executer les différents desctipteurs dessous d'acquisition et d'ouverture de fichier
+        # 
         btn_frame = ttk.LabelFrame(main_frame, text="Boutons de lancement", padding="10")
         btn_frame.pack(fill=tk.X, pady=10)
 
@@ -157,7 +166,7 @@ class NMRApp:
         self.btn_plot.pack(side=tk.BOTTOM,fill=tk.X, pady=5)
         
         self.btn_stop = ttk.Button(btn_frame, text="⏹ ARRÊTER", 
-                                   command=self.stop_acquisition, state=tk.DISABLED)
+                                   command=self.stop_acquisition, state=tk.NORMAL)
         self.btn_stop.pack(side=tk.BOTTOM,fill=tk.X, pady=5)
 
         btn_fid_frame = ttk.LabelFrame(btn_frame,text =" Boutons pour lancer avec fid")
@@ -204,7 +213,7 @@ class NMRApp:
         self.log_text.tag_config("BLUE", foreground="blue")    # Bleu pour fréquence
 
     def create_entry(self, parent, key, label, default, row, col=1):
-        """Helper pour créer label + entry et stocker la ref"""
+        """Helper pour créer label + entry et stocker  une donnée"""
         ttk.Label(parent, text=label).grid(row=row, column=col*2, sticky="w", padx=5, pady=2)
         entry = ttk.Entry(parent, width=15)
         entry.insert(0, default)
@@ -212,6 +221,7 @@ class NMRApp:
         self.inputs[key] = entry
 
     def log(self, msg,msgType="INFO"):
+        """ fonction qui affiche par dans la console de l'interface le message 'msg' avec le type 'msgType' """
         self.log_text.insert(tk.END, f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {msg}\n",msgType)
         #print(msg)
         self.log_text.see(tk.END)
@@ -246,8 +256,8 @@ class NMRApp:
         self.root.destroy()
 
     def start_thread_acq(self, mode):
-        if self.is_running: return
-        
+         
+        if self.is_running: return       
         self.save_settings() 
         self.is_running = True
         self.stop_event.clear()
@@ -265,7 +275,10 @@ class NMRApp:
         t.start()
 
     def start_thread_dash(self, figure,port):
-            
+        number_of_threads = len(threading.enumerate())
+        self.log(f"nombre de threads actifs: {number_of_threads}")
+
+   
         self.is_running = True
         self.stop_event.clear()
         self.log(f"Affichage sur http://127.0.0.1:{port}/")
@@ -342,9 +355,9 @@ class NMRApp:
             step_freq = 0
             step_p90 = 0 #On met step freq et P90 à 0 par défaut, seront modifiés en fonction du mode
 
-            echo = False                            # Variable indiquant si l'echo est activé ou non
+            echo = False                            # Variable indiquant si l'echo est activé ou non par défaut désactivé
 
-            match mode :
+            match mode: # mode de l'acquisition permet de selectioner une fid un balyage en frequence echo ou non...
                 case 0 :
                     # MODE SINGLE : On force 1 seul fichier (ou accumulation sans changer freq)
                     nb_files = 1      # On force à 1 cycle pour une acquisition simple
@@ -389,6 +402,8 @@ class NMRApp:
                     exp_prefix = "SweepP90_"
                     echo = True
                     self.log(">>> Mode: Frequency Sweep with echo")
+
+            # Si l'echo est activé, le calcul du temps de mesure est différent. Le temps de mesure est la durée de la fenetre d'acquisition après l'excitation
             if echo == True :
                 meas_time = (sample_Amount * decimation) / 125e6 + echo_time_us*3e-6 + excitation_duration_seconds*3
             else : 
@@ -397,56 +412,57 @@ class NMRApp:
             delay_rep = (total_time_s - meas_time) * 1e6
             print(delay_rep)
 
-            # Connexion
-            
+            # -- Connexion --- 
+            # Ces 4 lignes permettent la connexion vers la Red Pitaya. 
+            # Le nmr devant permet de réutiliser ces variables comme variables globales dans la librairie
+            # Client permet d'ouvrir le terminal et d'y mettre des commmandes
+            # Transport permet de télécharger le fichier de la Red Pitaya
+            # Local = sur l'ordinateur 
+            # Remote = sur la Red Pitaya
+            # PS : Faire ca avec une classe pour la connexion aurait été plus propre et plus compréhensible. 
             self.log(f"Connexion à {HOST}...")
             nmr.client = paramiko.SSHClient()
             nmr.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             nmr.client.connect(HOST, username=USER, password=PASS, port=22,timeout=10)
-            
             if not nmr.client.get_transport(): 
                 return
-            
             transport = paramiko.Transport((HOST, 22))
             transport.connect(username=USER, password=PASS)
             nmr.sftp = paramiko.SFTPClient.from_transport(transport)
             
+            # -- Création du dossier local qui stockera les fichiers ---
+            # Le nom du dossier est crée avec la date l'heure et les paramètres de l'expérience pour pouvoir reouvrir avec les bons paramètres
             nameLocalFolder = nmr.create_file_wdate(exp_prefix+str(nb_files)+"_"+str(step_freq)+"_"+str(larmor_Frequency_Hertz))
             
-            #progress_bar = tqdm(total=nb_files, desc="Processing Acquisitions to find Frequency", unit="file")
             for i in range(nb_files):
-                #progress_bar.update(1)
                 if self.stop_event.is_set(): break
                 
                 self.log(f"--- Step {i}/{nb_files} : {larmor_Frequency_Hertz/1e6:.3f} MHz {excitation_duration_seconds/1e-6:.3f}µs ---")
                 
-                # Acquisition
+                # Acquisition en lancant la commande vers la Red Pitaya utilisant la fonction de la librairie NMR_Library
                 if echo == True :
                     nmr.run_acquisition_echo_command(sample_Amount, decimation, acq_Amt, "mesures.bin", larmor_Frequency_Hertz, excitation_duration_seconds, delay_rep,echoTime=echo_time_us,verbose=True)
                 else :    
                     nmr.run_acquisition_fid_command(sample_Amount, decimation, acq_Amt, "mesures.bin", larmor_Frequency_Hertz, excitation_duration_seconds, delay_rep, verbose=True) 
                 
-                # Téléchargement
+                # Téléchargement une fois l'acquisition terminée on télécharge le fichier directement dans le dossier local
                 experiment_name = f"{p['exp_name']}{i}"
                 nameRemoteFolder = "mesures" 
                 nmr.download_file_sftp(experiment_name,nameRemoteFolder,nameLocalFolder)
                 
-                # Traitement
-                file_path = os.path.join(nameLocalFolder, experiment_name)
              
                 larmor_Frequency_Hertz += step_freq
                 excitation_duration_seconds += step_p90
             
             #progress_bar.close()
 
+            file_path = os.path.join(nameLocalFolder, experiment_name)
             self.log("-- Acquisition terminée --","BLUE")
-            self.data_store = {"file_path" : file_path}
-            print("Chemin renvoyé par l'acquisition : \n \t"+str(file_path))
-            ##self.open_file(filepath_all=file_path[:-1]) # Remove the index
+            print("Chemin du dernier fichier téléchargé : \n \t"+str(file_path))
             
         except Exception as e:
             self.log(f"ERREUR: {e}")
-            print(e) # Pour debug console
+            print(e) 
         finally:
             try:
                 nmr.client.close()
@@ -472,24 +488,28 @@ class NMRApp:
             return
 
     def open_file(self,filepath_all):
-        
+        # -- Récupération des variables et paramètres nécessaires -- 
         p = {k: v.get() for k, v in self.inputs.items()}
         
         graph_start = float(p['graph_start'])
+        lowcut = float(p['low_freq'])
+        highcut = float(p['high_freq'])
+
         Start_freq = float(filepath_all.split('_')[3]) - 50000
-        print(f"Start freq = {Start_freq}")
         Step_freq = float(filepath_all.split('_')[2])
         Number_of_files = int(filepath_all.split('_')[1])
-        
+        print(f"Start freq = {Start_freq}")
 
         # Initialisation variables accumulation
         freq_all = None
         tf_sum = None
+        
+        # -- Verifie que multiple files doit être activé pour faire la somme --
         if not(self.var_chk_btn_files.get()) and self.var_chk_btn_sumtf.get():
             self.log("SUM TF option requires multiple files to be enabled","ERROR")
             return
         
-        # --- multiple file enabled ---
+        # --- multiple file enabled activer dash si trop lourd ---
         if self.var_chk_btn_files.get(): ## IF TICKBOX MULTIPLE FILES IS ON
             if (Number_of_files >= 100) and (not self.var_chk_btn_dash.get()):
                 self.log("ENABLE DASH","ERROR")
@@ -498,7 +518,7 @@ class NMRApp:
             Number_of_files = 1
 
         print(f"Opening {Number_of_files}")
-        # --- if dash is enabled ---
+        # --- if dash resample is enabled ---
         if self.var_chk_btn_dash.get():
             fig1 = FigureResampler(go.Figure(), default_n_shown_samples=1000)
             fig2 = FigureResampler(go.Figure(), default_n_shown_samples=1000)
@@ -509,6 +529,7 @@ class NMRApp:
 
         fig3 = go.Figure() # For sum TF
 
+        # --- Boucle d'ouverture des fichiers -- 
         progress_bar = tqdm(total=Number_of_files, desc="Processing Acquisitions to find Frequency", unit="file")
         for i in range(Number_of_files):
             progress_bar.update(1)
@@ -524,16 +545,13 @@ class NMRApp:
             
             # --- if filter is enabled ---
             if self.var_chk_btn_filter.get():                
-                lowcut=float(p['low_freq'])
-                highcut=float(p['high_freq'])
                 if lowcut >= highcut :
                     self.log("Filtre : FREQUENCE BASSE > FREQ HAUTE","ERROR")
                     return
                 
                 voltageAcc_array = nmr.butter_bandpass_filter(data=voltageAcc_array, lowcut=lowcut, highcut=highcut, fs=1/dt, order=int(p['order']))
 
-            # Coupe
-            
+            # -- Coupe du graphe -- 
             idx = int(graph_start/(1000*dt))
             volt_cut = voltageAcc_array[idx:]
             time_cut = time_array[idx:]
@@ -543,6 +561,7 @@ class NMRApp:
             freq = np.fft.fftfreq(N, dt)
             mag = np.abs(np.fft.fft(volt_cut)) * 2 / N        
 
+            # --- if offset freq is enabled ---
             if self.var_chk_btn_offset_freq.get():
                 freq = freq + Start_freq + i*Step_freq  
 
@@ -553,6 +572,7 @@ class NMRApp:
                     freq_all = freq
                     tf_sum = mag
                 else:
+                    # Interpolation pour faire la somme des TF et que la sommme marche
                     g0 = interp1d(freq_all, tf_sum, bounds_error=False, fill_value=0.0)
                     freq_all = np.union1d(freq_all, freq)
                     g1 = interp1d(freq, mag, bounds_error=False, fill_value=0.0)
@@ -572,7 +592,7 @@ class NMRApp:
                     opacity=1, 
                     showlegend=False
                 ),hf_x = freq[:len(freq)//2], hf_y = mag[:len(mag)//2])
-                
+
             else :
                 self.log(f"sending file {i} on the plot...")
                 fig1.add_trace(go.Scattergl( #Scattergl to use opengl
@@ -604,13 +624,13 @@ class NMRApp:
             ))
             fig3.show()
 
-
         if self.var_chk_btn_dash.get():
             random_port_1 = random.randint(8050, 9000)
             random_port_2 = random.randint(8050, 9000)
+
+            ## Start dash threads lancement dans un thread séparé pour ne pas bloquer l'UI et en ouvrir plusieurs en même temps
             self.start_thread_dash(fig1,port = random_port_1)
             self.start_thread_dash(fig2,port = random_port_2)
-
             self.log("check the console to open the plot","WARNING")
         else :
             config = {'scrollZoom': True}
@@ -623,40 +643,6 @@ class NMRApp:
                         
         print(filepath)
         self.is_running = False
-
-    def show_plotly(self):
-        A = NULL
-        #self.browse_open_file()
-
-        # if d["time"] is None:
-        #     self.log("Pas de données à afficher.")
-        #     return
-
-        # self.log("Génération du graphique Plotly...")
-        
-        # # Création de la figure avec sous-graphes
-        # fig1 = go.Figure()
-        # fig2 = go.Figure()
-        # fig3 = go.Figure()
-        # if self.var_chk_btn_offset_freq.get():
-        #     # 1. Temporel
-        #     fig1.add_trace(go.Scatter(x=d['time'], y=d['voltage'], name="FID", mode='lines', line=dict(color='blue', width=1)))
-
-        # # 2. FFT Instant
-        # fig2.add_trace(go.Scatter(x=d['freq'], y=d['mag'], name="FFT Inst.", mode='lines', line=dict(color='orange')))
-
-        # # 3. FFT Somme
-        # fig3.add_trace(go.Scatter(x=d['freq_sum'], y=d['mag_sum'], name="FFT Somme", mode='lines', line=dict(color='green')))
-
-        # # Mise en forme
-        # fig1.update_xaxes(title_text="Temps (s)")
-        # fig2.update_xaxes(title_text="Fréquence (Hz)")
-        # fig3.update_xaxes(title_text="Fréquence (Hz)")
-        
-        # # Affichage (Ouvre le navigateur)
-        # fig1.show()
-        # fig2.show()
-        # fig3.show()
 
 if __name__ == "__main__":
     root = tk.Tk()
