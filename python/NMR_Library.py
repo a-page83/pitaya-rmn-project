@@ -81,13 +81,13 @@ def accumulate(voltage_matrix,nb_accumulated):
     
     return voltage_acc
 
-def open_file_csv(pathFile_csv, nombre_de_FID):
+def open_file_csv(pathFile_csv, nombre_de_FID=-1):
     """
     Read a CSV-format measurement file and return time axis, list of FID arrays, and accumulated signal.
     CSV header expected: [dsize, decimation, nombre_de_FID, gain, offset, nb_bits]
     Parameters:
       pathFile_csv   : path to CSV file
-      nombre_de_FID  : number of FIDs to read; if < 0, use value from file header
+      nombre_de_FID  : number of FIDs to read; if < 0, use value from file header, set default -1
     Returns:
       time           : 1D numpy array of time values (seconds)
       voltage        : list of numpy arrays, one per FID (float)
@@ -137,7 +137,7 @@ def open_file_csv(pathFile_csv, nombre_de_FID):
 
     return time, voltage, voltage_acc
 
-def open_file_bin(pathFile_bin,nombre_de_FID):
+def open_file_bin(pathFile_bin,nombre_de_FID = -1):
     """
     Read a binary-format measurement file and return time axis, list of FID arrays, and accumulated signal.
     Binary header: first 16 bytes = 4 x 4-byte little-endian ints (dsize, decimation, nombre_de_FID, ...)
@@ -251,17 +251,18 @@ def download_file_sftp(nameLocalFile,nameRemoteFolder,nameLocalFolder):
     """
     Download a remote file using an existing global SFTP client `sftp`.
     Parameters:
-        nameLocalFile    : filename on the local side
-        nameRemoteFolder : remote subfolder under REMOTE_PATH
+        nameLocalFile    : filename on the local side (computer)
+        nameRemoteFolder : remote subfolder under REMOTE_PATH (on the Red Pitaya)
         nameLocalFolder  : local directory to save into
+
+    Notes:
+    The remote file storing all the masured data is always named "mesure.bin".
     To work the paramiko SFTP client `sftp` must be already connected.
     to do so, use the all the connexion lines with the nmr. before
     example : nmr.sftp = paramiko.SFTPClient.from_transport(transport)
 
     """
-
-        
-    remote_path = REMOTE_PATH + nameRemoteFolder+'/' + "mesure.bin"
+    remote_path = REMOTE_PATH + nameRemoteFolder+'/' + "mesure.bin" #path on the Red Pitaya
     local_path = os.path.join(nameLocalFolder, nameLocalFile)
     
     try:
@@ -438,4 +439,3 @@ def plot_fourier_transform_plotly(graph_name, time, voltage):
     fig.update_layout(title="TF")
 
     fig.show_dash(mode='external')
-    # Note: consider plotting only positive frequencies (freq >= 0) for clarity.
